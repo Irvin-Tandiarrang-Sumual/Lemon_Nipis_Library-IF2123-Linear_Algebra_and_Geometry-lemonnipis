@@ -4,9 +4,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import os
 import pickle
-import math
 import time
-import glob
 
 # UTILITY FUNCTIONS (FILE I/O)
 
@@ -187,11 +185,8 @@ def compute_pca_svd(X_centered: np.ndarray, k: int) -> Tuple[np.ndarray, np.ndar
     eig_val_k[eig_val_k < 0] = 0 
     singular_values = np.sqrt(eig_val_k * N)
     
-    # 5. Proyeksi ke Eigenfaces (d x k)
-    # Gunakan X_centered float64 untuk presisi
     eigenfaces_unnormalized = np.dot(X_centered.T.astype(np.float64), eig_vec_small_k)
     
-    # 6. Normalisasi dengan Sigma
     eigenfaces = np.zeros_like(eigenfaces_unnormalized)
     for i in range(k):
         sigma = singular_values[i]
@@ -207,7 +202,7 @@ def compute_pca_svd(X_centered: np.ndarray, k: int) -> Tuple[np.ndarray, np.ndar
 def project_dataset(X_centered: np.ndarray, pcs: np.ndarray) -> np.ndarray:
     X_32 = X_centered.astype(np.float32)
     pcs_32 = pcs.astype(np.float32)
-    projected_data = np.dot(X_32, pcs_32.T)
+    projected_data = np.dot(X_32, pcs_32)
     return projected_data
 
 def project_query(q_vect: np.ndarray, mean_vector: np.ndarray, pcs: np.ndarray) -> np.ndarray:
@@ -215,7 +210,7 @@ def project_query(q_vect: np.ndarray, mean_vector: np.ndarray, pcs: np.ndarray) 
     mean_32 = mean_vector.astype(np.float32)
     pcs_32 = pcs.astype(np.float32)
     q_centered = q_vect_32 - mean_32
-    q_weights = np.dot(pcs_32, q_centered)
+    q_weights = np.dot(pcs_32.T, q_centered)
     return q_weights
 
 #  2.1.5 METODE PERHITUNGAN SIMILARITAS
