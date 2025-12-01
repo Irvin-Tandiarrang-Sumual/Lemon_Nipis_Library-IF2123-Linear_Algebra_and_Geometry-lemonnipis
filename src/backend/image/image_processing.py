@@ -324,22 +324,22 @@ def query_image_from_model(query_path: str, model: dict, top_n: int = 12, thresh
             
     return results
 
+if __name__ == "__main__":
+    # MAIN (untuk testing)
+    DATASET_DIR = "data/covers"
+    MODEL_PATH = "data/model_pca.pkl"
 
-# MAIN (untuk testing)
-DATASET_DIR = "data/covers"
-MODEL_PATH = "data/model_pca.pkl"
+    pca_model = build_pca_model(
+        dataset_dir=DATASET_DIR,
+        model_save_path=MODEL_PATH,
+        target_width=200,
+        target_height=300,
+        k=50
+    )
 
-pca_model = build_pca_model(
-    dataset_dir=DATASET_DIR, 
-    model_save_path=MODEL_PATH, 
-    target_width=200, 
-    target_height=300, 
-    k=50
-)
+    query_file = "data/covers/2488.jpg"
+    results = query_image_from_model(query_file, pca_model, top_n=5)
 
-query_file = "src/backend/image/1.jpg" 
-results = query_image_from_model(query_file, pca_model, top_n=5)
-
-print("Hasil Pencarian:")
-for res in results:
-    print(f"- {res['file_name']} (Jarak: {res['score']:.4f})")
+    print("Hasil Pencarian:")
+    for res in results:
+        print(f"- {res['index']} {res['file_path']} {res['file_name']} (Jarak: {res['score']:.4f})")
