@@ -456,3 +456,30 @@ def get_top_k_recommendations( query_text: str, model: Dict, stopwords: set, k: 
     for idx in order[:k]:
         topk.append((int(idx), float(sims[idx])))
     return topk
+
+# 2.2.7 FUNGSI QUERY UTAMA 
+
+def query_model(query_text: str, model: Dict, stopwords: set, top_k: int = 5, use_stemming=False):
+    """
+    Fungsi high-level untuk melakukan query LSA.
+    Frontend atau komponen lain cukup memanggil fungsi ini.
+
+    Input:
+        query_text   : string query pengguna
+        model        : dictionary hasil build_lsa_model()
+        stopwords    : set stopword
+        top_k        : berapa banyak dokumen teratas yang dikembalikan
+        use_stemming : apakah stemming dipakai pada query
+
+    Output:
+        list of (index_dokumen, similarity_score)
+    """
+    if not query_text or not query_text.strip():
+        return []
+
+    return get_top_k_recommendations(
+        query_text=query_text,
+        model=model,
+        stopwords=stopwords,
+        k=top_k
+    )
