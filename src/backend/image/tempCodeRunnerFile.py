@@ -1,6 +1,7 @@
 from typing import List, Tuple, Callable, Optional, Dict
 import numpy as np
 from PIL import Image
+import matplotlib.pyplot as plt
 import os
 import pickle
 import time
@@ -201,7 +202,7 @@ def compute_pca_svd(X_centered: np.ndarray, k: int) -> Tuple[np.ndarray, np.ndar
 def project_dataset(X_centered: np.ndarray, pcs: np.ndarray) -> np.ndarray:
     X_32 = X_centered.astype(np.float32)
     pcs_32 = pcs.astype(np.float32)
-    projected_data = np.dot(X_32, pcs_32.T) 
+    projected_data = np.dot(X_32, pcs_32)
     return projected_data
 
 def project_query(q_vect: np.ndarray, mean_vector: np.ndarray, pcs: np.ndarray) -> np.ndarray:
@@ -209,7 +210,7 @@ def project_query(q_vect: np.ndarray, mean_vector: np.ndarray, pcs: np.ndarray) 
     mean_32 = mean_vector.astype(np.float32)
     pcs_32 = pcs.astype(np.float32)
     q_centered = q_vect_32 - mean_32
-    q_weights = np.dot(pcs_32, q_centered)
+    q_weights = np.dot(pcs_32.T, q_centered)
     return q_weights
 
 #  2.1.5 METODE PERHITUNGAN SIMILARITAS
@@ -318,22 +319,22 @@ def query_image_from_model(query_path: str, model: dict, top_n: int = 12, thresh
             
     return results
 
+if __name__ == "__main__":
+    # MAIN (untuk testing)
+    DATASET_DIR = "data/covers"
+    MODEL_PATH = "data/model_pca.pkl"
 
-# MAIN (untuk testing)
-DATASET_DIR = "data/covers"
-MODEL_PATH = "data/model_pca.pkl"
+    pca_model = build_pca_model(
+        dataset_dir=DATASET_DIR,
+        model_save_path=MODEL_PATH,
+        target_width=200,
+        target_height=300,
+        k=50
+    )
 
-pca_model = build_pca_model(
-    dataset_dir=DATASET_DIR, 
-    model_save_path=MODEL_PATH, 
-    target_width=200, 
-    target_height=300, 
-    k=50
-)
+    query_file = "data/covers/tc1.png"
+    results = query_image_from_model(query_file, pca_model, top_n=5)
 
-query_file = "src/backend/image/tc2.png" 
-results = query_image_from_model(query_file, pca_model, top_n=10)
-
-print("Hasil Pencarian:")
-for res in results:
-    print(f"- {res['file_name']} (Jarak: {res['score']:.4f})")
+    print("Hasil Pencarian:")
+    for res in results:
+        print(f"- {res['index']} {res['file_path']} {res['file_name']} (Jarak: {res['score']:.4f})")
