@@ -459,7 +459,7 @@ def get_top_k_recommendations( query_text: str, model: Dict, stopwords: set, k: 
 
 # 2.2.7 FUNGSI QUERY UTAMA 
 
-def query_model(query_text: str, model: Dict, stopwords: set, top_k: int = 5, use_stemming=False):
+def query_lsa(query_text: str, model: Dict, stopwords: set, top_k: int = 5, use_stemming=False):
     """
     Fungsi high-level untuk melakukan query LSA.
     Frontend atau komponen lain cukup memanggil fungsi ini.
