@@ -483,3 +483,15 @@ def query_model(query_text: str, model: Dict, stopwords: set, top_k: int = 5, us
         stopwords=stopwords,
         k=top_k
     )
+
+# LOADER MODEL
+import pickle
+
+def load_lsa_model(model_path: str) -> Dict:
+    """
+    Memuat model LSA dari file pickle.
+    Digunakan saat aplikasi utama run agar tidak perlu build model ulang setiap request.
+    """
+    with open(model_path, "rb") as f:
+        model = pickle.load(f)
+    return model
