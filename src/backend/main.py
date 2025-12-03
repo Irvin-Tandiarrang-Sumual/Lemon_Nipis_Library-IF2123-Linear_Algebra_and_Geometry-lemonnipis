@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, Depends, Request
+from fastapi import FastAPI, UploadFile, Depends, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -9,10 +9,10 @@ import os
 BASE_PATH = Path(__file__).parent.parent.parent
 
 # covers
-COVERS_DIR_PATH = BASE_PATH / "data" / "covers"
+COVERS_DIR_PATH = BASE_PATH / "data"
 
 # txt
-TXT_DIR_PATH = BASE_PATH / "data" / "txt"
+TXT_DIR_PATH = BASE_PATH / "data"
 
 # mapper
 MAPPER_PATH = BASE_PATH / "data" / "mapper.json"
@@ -24,7 +24,7 @@ def load_mapper(path : str):
     if not os.path.exists(path):
         print(f"Mapper file {path} tidak ditemukan")
         return {}
-    with open(path, 'r') as f:
+    with open(path, 'r', encoding='utf-8') as f:
         return json.load(f)
     
 @asynccontextmanager
@@ -77,13 +77,58 @@ async def read_root():
 
 # (get) all book
 @app.get("/api/books")
-async def read_books(book_mapper : dict = Depends(get_book_mapper)):
-    return book_mapper
+async def read_books(skip : int = 0, limit : int = 15,
+                    book_mapper : dict = Depends(get_book_mapper)):
+    if not book_mapper:
+        raise HTTPException(status_code=503, detail="Mapper not loaded")
+    all_books = []
+    for book_id, book in book_mapper.items():
+        all_books.append(
+            {
+                "id" : book_id,
+                "title" : book.get("title", "Unknown"),
+                "cover" : book.get("cover", ""),
+                "txt" : book.get("txt", "")
+            }
+        )
+    total = len(all_books)
+    return {
+        "total" : total,
+        "paginated_results" : all_books[skip:skip + limit]
+    }
 
 # (get) detail - content
 @app.get("/api/books/{book_id}/content")
 async def read_book_detail_content(book_id : str, book_mapper : dict = Depends(get_book_mapper)):
-    pass
+    if not book_mapper:
+        raise HTTPException(status_code=503, detail="Mapper not loaded")
+    
+    if book_id not in book_mapper:
+        raise HTTPException(status_code=404, detail= "Book not found")
+    
+    print(f"Book id : {book_id}")
+    book = book_mapper[book_id]
+
+    # ambil path masing-masing
+    cover_path = book.get("cover", "")
+    txt_relative_path = book.get("txt", "")
+    if not txt_relative_path:
+        raise HTTPException(status_code=404, detail= "Text file path not found")
+    txt_path = TXT_DIR_PATH / txt_relative_path
+    if not txt_path.exists():
+        raise HTTPException(status_code=404, detail= "Text file not found")
+    
+    try:
+        with open(txt_path, 'r', encoding= 'utf-8') as f:
+            content = f.read()
+        return {
+            "id" : book_id,
+            "title" : book.get("title", "Unknown"),
+            "cover" : cover_path,
+            "content" : content
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # (get) detail - recommendation
 @app.get("/api/books/{book_id}/recommendation")
@@ -92,8 +137,36 @@ async def read_book_detail_recommendation(book_id : str, book_mapper : dict = De
 
 # (get) search pakai judul
 @app.get("/api/books/search")
-async def search_books_by_title(title : str, book_mapper : dict = Depends(get_book_mapper)):
-    pass
+async def search_books_by_title(title_query : str, skip : int = 0, limit :int = 15, book_mapper : dict = Depends(get_book_mapper)):
+    if not book_mapper:
+        raise HTTPException(status_code=503, detail="Mapper not loaded")
+    
+    if not title_query.strip():
+        raise HTTPException(status_code=400, detail="Query cannot be empty")
+    
+    # proses cari pakai substring
+    search_result = []
+    for book_id, book in book_mapper.items():
+        book_title = book.get("title", "Unknown")
+        if (title_query.lower() in book_title.lower()): #biar case-insensitive
+            search_result.append(
+                {
+                    "id" : book_id,
+                    "title" : book_title,
+                    "cover" : book.get("cover", ""),
+                    "txt" : book.get("txt", "")
+                }
+            )
+
+    # Pagination
+    total = len(search_result)
+    paginated_result = search_result[skip:skip + limit]
+    return {
+        "query" : title_query,
+        "total" : total,
+        "results" : paginated_result
+    }
+
 
 # (post) search pake image
 @app.post("/api/books/search-by-image")
