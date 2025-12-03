@@ -72,3 +72,23 @@ app.add_middleware(
 @app.get("/")
 async def read_root():
     return {"message : Hallo sar!"}
+
+# (get) all book
+@app.get("/api/books")
+async def read_books():
+    pass
+
+# (get) detail - content
+@app.get("api/books/{book_id}/content")
+async def read_book_detail_content(book_id : int):
+    pass
+
+# (get) detail - recommendation
+@app.get("api/books/{book_id}/recommendation")
+async def read_book_detail_recommendation(book_id : int):
+    pass
+
+@app.post("api/books/")
+# (post) search pake image
+
+# (post) search pake judul
