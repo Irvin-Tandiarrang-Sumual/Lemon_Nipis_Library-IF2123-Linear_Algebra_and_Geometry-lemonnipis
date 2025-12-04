@@ -1,16 +1,30 @@
 import { notFound } from "next/navigation";
-import mapperData from "@/data/mapper.json";
 import { BookDetailWrapper } from "@/components/book-detail/detail-wrapper";
 
+// const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL = "http://localhost:8000";
+
 async function getBookById(id: string) {
-  const data = mapperData as Record<string, any>;
-  const book = data[id];
-  if (!book) return null;
-  return { id, ...book };
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/books/${id}/content`, {
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      if (res.status === 404) return null;
+      throw new Error("Failed to fetch book");
+    }
+    return res.json();
+  } catch (error) {
+    console.error("Error fetching book:", error);
+    return null;
+  }
 }
 
-export default async function BookDetailPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default async function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  
+  const { id } = await params; 
+
   const book = await getBookById(id);
 
   if (!book) {
