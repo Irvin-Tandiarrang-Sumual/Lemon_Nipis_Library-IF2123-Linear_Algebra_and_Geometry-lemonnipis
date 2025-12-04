@@ -21,13 +21,10 @@ async function getBookById(id: string) {
   }
 }
 
-// PERUBAHAN 1: Ubah tipe params menjadi Promise<{ id: string }>
 export default async function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
   
-  // PERUBAHAN 2: Await params sebelum destructuring id
   const { id } = await params; 
 
-  // Gunakan id yang sudah di-resolve
   const book = await getBookById(id);
 
   if (!book) {

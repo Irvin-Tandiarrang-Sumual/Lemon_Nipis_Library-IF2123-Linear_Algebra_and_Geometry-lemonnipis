@@ -4,7 +4,6 @@ import { Image } from "@heroui/image";
 import Link from "next/link";
 import { BottomPagination } from "@/components/bottom-pagination"; 
 
-// Konfigurasi URL API
 const API_BASE_URL = "http://localhost:8000";
 
 interface Book {
