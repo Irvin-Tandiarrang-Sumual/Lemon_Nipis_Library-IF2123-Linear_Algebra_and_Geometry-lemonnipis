@@ -54,12 +54,15 @@ def remove_stopwords(tokens: List[str], stopwords: set) -> List[str]:
     return [t for t in tokens if t not in stopwords]
 
 
-def document_preprocess(text: str, stopwords: set, use_stemming=False) -> List[str]:
+def document_preprocess(query_path : str, stopwords: set, use_stemming=False) -> List[str]:
     """
     Pipeline preprocessing lengkap untuk 1 dokumen.
     Output:
         list kata siap digunakan untuk BoW dan TF-IDF
     """
+    with open(query_path) as f:
+        text = f.read()
+        
     toks = tokenize(text)
     toks = normalize_tokens(toks)
     if use_stemming:
@@ -362,7 +365,7 @@ def load_lsa_model(model_path: str) -> Dict:
         model = pickle.load(f)
     return model
 
-def build_lsa_model(dataset_dir: str, stopwords: set, model_save_path: str, k: int = 50, use_stemming=False, overwrite: bool = False) -> Dict:
+def build_lsa_model(dataset_dir: str, model_save_path: str, stop_words: set = set(stopwords.words('english')), k: int = 50, use_stemming=False, overwrite: bool = False) -> Dict:
     """
     Build model untuk LSA dengan loading dari direktori & fitur save/load model.
     """
@@ -393,7 +396,7 @@ def build_lsa_model(dataset_dir: str, stopwords: set, model_save_path: str, k: i
         with open(p, 'r', encoding='utf-8', errors='ignore') as f:
             txt = f.read()
         raw_texts.append(txt)
-        toks = document_preprocess(txt, stopwords, use_stemming=use_stemming)
+        toks = document_preprocess(txt, stop_words, use_stemming=use_stemming)
         preprocessed.append(toks)
 
     print("Membangun Vocabulary & Matrix...")
@@ -416,10 +419,9 @@ def build_lsa_model(dataset_dir: str, stopwords: set, model_save_path: str, k: i
         'embeddings': embeddings,
         'preprocessed_docs': preprocessed,
         'idf': idf,
-        'docs_paths': docs_path_list # Berguna untuk tracking path asli
+        'docs_paths': docs_path_list 
     }
 
-    # 4. Simpan Model
     save_model(model_save_path, model)
 
     elapsed = time.time() - start_time
@@ -522,5 +524,4 @@ if __name__ == "__main__":
         dataset_dir= "data/txt",
         model_save_path= MODEL_PATH,
         use_stemming= True,
-        stopwords= set(stopwords.words('english')),
         k = 50,)
