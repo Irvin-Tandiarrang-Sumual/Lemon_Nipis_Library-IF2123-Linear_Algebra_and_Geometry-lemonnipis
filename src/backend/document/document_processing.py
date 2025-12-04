@@ -60,9 +60,9 @@ def document_preprocess(query_path : str, stopwords: set, use_stemming=False) ->
     Output:
         list kata siap digunakan untuk BoW dan TF-IDF
     """
-    with open(query_path) as f:
+    with open(query_path, encoding="utf-8") as f:
         text = f.read()
-        
+
     toks = tokenize(text)
     toks = normalize_tokens(toks)
     if use_stemming:
@@ -473,7 +473,7 @@ def embed_query(query_path: str, model: Dict, stopwords: set, use_stemming=False
     q_embed = proj * inv_sigma
     return q_embed
 
-def get_top_k_recommendations(query_path: str, model: Dict, stopwords: set, k: int = 5) -> List[Tuple[int, float]]:
+def get_top_k_recommendations(query_path: str, model: Dict, stopwords: set, k: int = 5) -> List[Dict]:
     """
     Mendapatkan top-k dokumen paling mirip berdasarkan cosine similarity.
 
@@ -484,12 +484,19 @@ def get_top_k_recommendations(query_path: str, model: Dict, stopwords: set, k: i
     embeddings = model['embeddings']  
     if embeddings.size == 0 or q_embed.size == 0:
         return []
-    sims = compute_similarity_scores(q_embed, embeddings)  
+    sims = compute_similarity_scores(q_embed, embeddings)
     order = np.argsort(-sims)
-    topk = []
+
+    docs_paths = model['docs_paths']
+    
+    top_k = []
     for idx in order[:k]:
-        topk.append((int(idx), float(sims[idx])))
-    return topk
+        top_k.append({
+            "index": int(idx),
+            "similarity": float(sims[idx]),
+            "path": docs_paths[idx],
+        })
+    return top_k
 
 # 2.2.7 FUNGSI QUERY UTAMA 
 
@@ -525,3 +532,7 @@ if __name__ == "__main__":
         model_save_path= MODEL_PATH,
         use_stemming= True,
         k = 50,)
+    
+    query_result = query_lsa("data/txt/1.txt", lsa_model, top_k=5,use_stemming=True)
+    for res in query_result:
+        print(res)
