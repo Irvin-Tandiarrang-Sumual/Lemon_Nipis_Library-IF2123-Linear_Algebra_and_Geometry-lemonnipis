@@ -21,3 +21,12 @@ root
 2. `docs`: to store final report and other documents
 3. `src`: to store source code of the application. Includes `frontend` and `backend` to store each respective component of the app
 4. `test`: to store test cases
+
+
+### Run
+Backend (src/backend): 
+    1. Create : python -m venv venv
+    2. Aktifkan Python Virtual Environment : venv\Scripts\activate
+    3. Jalankan FastAPI-nya : uvicorn main:app --reload
+Frontend (src/frontend) : 
+    1. Jalankan FE : npm run dev
