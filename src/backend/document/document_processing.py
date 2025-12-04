@@ -366,7 +366,6 @@ def build_lsa_model(dataset_dir: str, stopwords: set, model_save_path: str, k: i
     """
     Build model untuk LSA dengan loading dari direktori & fitur save/load model.
     """
-    # 1. Cek apakah model sudah ada
     if os.path.exists(model_save_path) and not overwrite:
         print("Model LSA sudah ada.")
         return load_lsa_model(model_save_path)
@@ -374,12 +373,11 @@ def build_lsa_model(dataset_dir: str, stopwords: set, model_save_path: str, k: i
     print(f"Memulai Training LSA... (k={k})")
     start_time = time.time()
 
-    # 2. Load path dokumen dari direktori
     docs_path_list = []
     if os.path.exists(dataset_dir):
         for root, dirs, files in os.walk(dataset_dir):
             for file in files:
-                if file.lower().endswith('.txt'): # Asumsi file teks berekstensi .txt
+                if file.lower().endswith('.txt'):
                     docs_path_list.append(os.path.join(root, file))
     
     N = len(docs_path_list)
@@ -387,7 +385,6 @@ def build_lsa_model(dataset_dir: str, stopwords: set, model_save_path: str, k: i
         raise ValueError(f"Dataset kosong! Tidak ada file .txt ditemukan di {dataset_dir}")
     print(f"Ditemukan {N} dokumen.")
 
-    # 3. Proses Dokumen (Algoritma asli)
     print("Memproses dokumen dan preprocessing...")
     preprocessed = []
     raw_texts = []
@@ -430,7 +427,7 @@ def build_lsa_model(dataset_dir: str, stopwords: set, model_save_path: str, k: i
 
     return model
 
-def embed_query(query_text: str, model: Dict, stopwords: set, use_stemming=False) -> np.ndarray:
+def embed_query(query_path: str, model: Dict, stopwords: set, use_stemming=False) -> np.ndarray:
     """
     Memproses query teks agar sesuai pipeline dokumen:
     1. Preprocess query
@@ -447,7 +444,7 @@ def embed_query(query_text: str, model: Dict, stopwords: set, use_stemming=False
     U_k = model['U_k']  
     Sigma_k = model['Sigma_k']  
 
-    toks = document_preprocess(query_text, stopwords, use_stemming=use_stemming)
+    toks = document_preprocess(query_path, stopwords, use_stemming=use_stemming)
     m = len(vocab)
     q_vec = np.zeros((m,), dtype=float)
     idx = {term: i for i, term in enumerate(vocab)}
@@ -474,14 +471,14 @@ def embed_query(query_text: str, model: Dict, stopwords: set, use_stemming=False
     q_embed = proj * inv_sigma
     return q_embed
 
-def get_top_k_recommendations(query_text: str, model: Dict, stopwords: set, k: int = 5) -> List[Tuple[int, float]]:
+def get_top_k_recommendations(query_path: str, model: Dict, stopwords: set, k: int = 5) -> List[Tuple[int, float]]:
     """
     Mendapatkan top-k dokumen paling mirip berdasarkan cosine similarity.
 
     Return list berisi tuple:
     (index_dokumen, similarity)
     """
-    q_embed = embed_query(query_text, model, stopwords)
+    q_embed = embed_query(query_path, model, stopwords)
     embeddings = model['embeddings']  
     if embeddings.size == 0 or q_embed.size == 0:
         return []
@@ -494,13 +491,13 @@ def get_top_k_recommendations(query_text: str, model: Dict, stopwords: set, k: i
 
 # 2.2.7 FUNGSI QUERY UTAMA 
 
-def query_lsa(query_text: str, model: Dict, stop_words: set = set(stopwords.words('english')), top_k: int = 5, use_stemming=False):
+def query_lsa(query_path: str, model: Dict, stop_words: set = set(stopwords.words('english')), top_k: int = 5, use_stemming=False):
     """
     Fungsi high-level untuk melakukan query LSA.
     Frontend atau komponen lain cukup memanggil fungsi ini.
 
     Input:
-        query_text   : string query pengguna
+        query_path   : path txt document
         model        : dictionary hasil build_lsa_model()
         stopwords    : set stopword
         top_k        : berapa banyak dokumen teratas yang dikembalikan
@@ -509,11 +506,11 @@ def query_lsa(query_text: str, model: Dict, stop_words: set = set(stopwords.word
     Output:
         list of (index_dokumen, similarity_score)
     """
-    if not query_text or not query_text.strip():
+    if not query_path or not query_path.strip():
         return []
 
     return get_top_k_recommendations(
-        query_text=query_text,
+        query_path=query_path,
         model=model,
         stopwords=stop_words,
         k=top_k
