@@ -1,21 +1,18 @@
 from typing import List, Dict, Tuple, Optional
 import numpy as np
 import os
+import time
 import re
 import math
 import random
-
-try:
-    from nltk.stem import PorterStemmer
-    _NLTK_AVAILABLE = True
-    _STEMMER = PorterStemmer()
-except Exception:
-    _NLTK_AVAILABLE = False
-    _STEMMER = None
-
+import nltk
+from nltk.stem import PorterStemmer
+from nltk.corpus import stopwords
+import pickle
+nltk.download('stopwords')
 # 2.2.1 PERSIAPAN DATA DOKUMEN
 
-def tokenize(text: str) -> List[str]:
+def tokenize(text: str) -> List[str]: ####AMAN
     """
     Tokenisasi: memecah teks menjadi token/kata.
     Input:
@@ -26,8 +23,7 @@ def tokenize(text: str) -> List[str]:
     tokens = re.findall(r"[A-Za-z]+", text)
     return tokens
 
-
-def normalize_tokens(tokens: List[str]) -> List[str]:
+def normalize_tokens(tokens: List[str]) -> List[str]: ## dari baca harusnya aman
     """
     Normalisasi:
     - Ubah huruf menjadi lowercase
@@ -37,16 +33,12 @@ def normalize_tokens(tokens: List[str]) -> List[str]:
     """
     return [t.lower() for t in tokens if t and t.isalpha()]
 
-
-def stem_tokens(tokens: List[str]) -> List[str]:
+def stem_tokens(tokens: List[str]) -> List[str]: ## aman
     """
     Stemming: Mengubah kata-kata ke bentuk dasarnya (akar kata)
     """
-    if _NLTK_AVAILABLE and _STEMMER is not None:
-        return [_STEMMER.stem(t) for t in tokens]
-    else:
-        return tokens
-
+    porter_stemmer = PorterStemmer()
+    return [porter_stemmer.stem(word) for word in tokens]
 
 def remove_stopwords(tokens: List[str], stopwords: set) -> List[str]:
     """
@@ -58,7 +50,7 @@ def remove_stopwords(tokens: List[str], stopwords: set) -> List[str]:
         filtered tokens
     """
     if not stopwords:
-        return tokens[:]
+        return tokens
     return [t for t in tokens if t not in stopwords]
 
 
@@ -70,9 +62,9 @@ def document_preprocess(text: str, stopwords: set, use_stemming=False) -> List[s
     """
     toks = tokenize(text)
     toks = normalize_tokens(toks)
-    toks = remove_stopwords(toks, stopwords)
     if use_stemming:
         toks = stem_tokens(toks)
+    toks = remove_stopwords(toks, stopwords)
     return toks
 
 # 2.2.2 MATRIKS TERM-DOCUMENT
@@ -104,13 +96,13 @@ def build_term_document_matrix(preprocessed_docs: List[List[str]], vocab: List[s
     """
     m = len(vocab)
     n = len(preprocessed_docs)
-    A = np.zeros((m, n), dtype=float)
+    tdm = np.zeros((m, n), dtype= np.float64)
     index = {term: idx for idx, term in enumerate(vocab)}
     for j, doc in enumerate(preprocessed_docs):
         for term in doc:
             if term in index:
-                A[index[term], j] += 1.0
-    return A
+                tdm[index[term], j] += 1.0
+    return tdm
 
 # 2.2.3 PEMBOBOTAN TF-IDF
 
@@ -122,11 +114,11 @@ def compute_tf(A: np.ndarray) -> np.ndarray:
     TF shape harus sama dengan A.
     """
     col_sums = A.sum(axis=0)  
-    TF = np.zeros_like(A, dtype=float)
+    tf = np.zeros_like(A, dtype=np.float64)
     nonzero_cols = col_sums > 0
     if np.any(nonzero_cols):
-        TF[:, nonzero_cols] = A[:, nonzero_cols] / col_sums[nonzero_cols]
-    return TF
+        tf[:, nonzero_cols] = A[:, nonzero_cols] / col_sums[nonzero_cols]
+    return tf
 
 
 def compute_idf(A: np.ndarray) -> np.ndarray:
@@ -152,10 +144,10 @@ def compute_tfidf(A: np.ndarray) -> np.ndarray:
     Output:
         TFIDF matrix shape (m, n)
     """
-    TF = compute_tf(A) 
+    tf = compute_tf(A) 
     idf = compute_idf(A)  
-    TFIDF = TF * idf[:, np.newaxis]
-    return TFIDF
+    tfidf = tf * idf[:, np.newaxis]
+    return tfidf
 
 # 2.2.4 TRUNCATED SVD (manual, via Eigen + Gram trick)
 
@@ -297,7 +289,7 @@ def build_document_embeddings(V_k: np.ndarray, Sigma_k: np.ndarray) -> np.ndarra
     """
     if V_k.size == 0 or Sigma_k.size == 0:
         return np.zeros((V_k.shape[0], 0))
-    return V_k @ Sigma_k
+    return np.dot(V_k, Sigma_k)
 
 # 2.2.6 METODE PERHITUNGAN SIMILARITAS
 
@@ -319,13 +311,13 @@ def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
     Output:
         nilai float antara -1 hingga 1
     """
-    a = np.asarray(a, dtype=float).ravel()
-    b = np.asarray(b, dtype=float).ravel()
+    a = np.asarray(a, dtype=np.float64).ravel()
+    b = np.asarray(b, dtype=np.float64).ravel()
     na = math.sqrt((a * a).sum())
     nb = math.sqrt((b * b).sum())
     if na <= 1e-12 or nb <= 1e-12:
         return 0.0
-    return float((a @ b) / (na * nb))
+    return float(np.dot(a, b)/ (na * nb))
 
 
 def compute_similarity_scores(query_vec: np.ndarray, doc_embeddings: np.ndarray) -> np.ndarray:
@@ -339,7 +331,7 @@ def compute_similarity_scores(query_vec: np.ndarray, doc_embeddings: np.ndarray)
     qn = math.sqrt((query_vec * query_vec).sum())
     if qn <= 1e-12:
         return np.zeros((doc_embeddings.shape[0],), dtype=float)
-    dots = doc_embeddings @ query_vec  # (n,)
+    dots = np.dot(doc_embeddings, query_vec)  # (n,)
     doc_norms = np.sqrt((doc_embeddings * doc_embeddings).sum(axis=1))  # (n,)
     denom = doc_norms * qn
     with np.errstate(divide='ignore', invalid='ignore'):
@@ -347,27 +339,59 @@ def compute_similarity_scores(query_vec: np.ndarray, doc_embeddings: np.ndarray)
     return sims
 
 # HIGH LEVEL: BUILD MODEL + QUERY
+def save_model(path: str, model: dict) -> None:
+    folder = os.path.dirname(path)
+    if folder and not os.path.exists(folder):
+        os.makedirs(folder)
+        
+    try:
+        with open(path, 'wb') as f:
+            pickle.dump(model, f)
+        print(f"Model berhasil disimpan ke: {path}")
+    except Exception as e:
+        print(f"Gagal menyimpan model: {e}")
+# LOADER MODEL
+import pickle
 
-def build_lsa_model(docs_path_list: List[str], stopwords: set, k: int = 50, use_stemming=False) -> Dict:
+def load_lsa_model(model_path: str) -> Dict:
     """
-    Build model untuk LSA:
-
-    Langkah:
-    1. Load dokumen -> preprocessing
-    2. Build vocabulary
-    3. Term-document matrix
-    4. TF-IDF
-    5. Truncated SVD
-    6. Embedding dokumen
-
-    Return dictionary berisi:
-    - vocab
-    - U_k, Σ_k, V_k
-    - embeddings dokumen
-    - preprocessed docs
+    Memuat model LSA dari file pickle.
+    Digunakan saat aplikasi utama run agar tidak perlu build model ulang setiap request.
     """
+    with open(model_path, "rb") as f:
+        model = pickle.load(f)
+    return model
+
+def build_lsa_model(dataset_dir: str, stopwords: set, model_save_path: str, k: int = 50, use_stemming=False, overwrite: bool = False) -> Dict:
+    """
+    Build model untuk LSA dengan loading dari direktori & fitur save/load model.
+    """
+    # 1. Cek apakah model sudah ada
+    if os.path.exists(model_save_path) and not overwrite:
+        print("Model LSA sudah ada.")
+        return load_lsa_model(model_save_path)
+
+    print(f"Memulai Training LSA... (k={k})")
+    start_time = time.time()
+
+    # 2. Load path dokumen dari direktori
+    docs_path_list = []
+    if os.path.exists(dataset_dir):
+        for root, dirs, files in os.walk(dataset_dir):
+            for file in files:
+                if file.lower().endswith('.txt'): # Asumsi file teks berekstensi .txt
+                    docs_path_list.append(os.path.join(root, file))
+    
+    N = len(docs_path_list)
+    if N == 0:
+        raise ValueError(f"Dataset kosong! Tidak ada file .txt ditemukan di {dataset_dir}")
+    print(f"Ditemukan {N} dokumen.")
+
+    # 3. Proses Dokumen (Algoritma asli)
+    print("Memproses dokumen dan preprocessing...")
     preprocessed = []
     raw_texts = []
+    
     for p in docs_path_list:
         with open(p, 'r', encoding='utf-8', errors='ignore') as f:
             txt = f.read()
@@ -375,9 +399,12 @@ def build_lsa_model(docs_path_list: List[str], stopwords: set, k: int = 50, use_
         toks = document_preprocess(txt, stopwords, use_stemming=use_stemming)
         preprocessed.append(toks)
 
+    print("Membangun Vocabulary & Matrix...")
     vocab = build_vocabulary(preprocessed)
     A = build_term_document_matrix(preprocessed, vocab)  
     tfidf = compute_tfidf(A)  
+    
+    print("Menghitung SVD (LSA)...")
     U_k, Sigma_k, V_k = truncated_svd(tfidf, k=k)
     embeddings = build_document_embeddings(V_k, Sigma_k)  
     idf = compute_idf(A)
@@ -391,8 +418,16 @@ def build_lsa_model(docs_path_list: List[str], stopwords: set, k: int = 50, use_
         'V_k': V_k,
         'embeddings': embeddings,
         'preprocessed_docs': preprocessed,
-        'idf': idf
+        'idf': idf,
+        'docs_paths': docs_path_list # Berguna untuk tracking path asli
     }
+
+    # 4. Simpan Model
+    save_model(model_save_path, model)
+
+    elapsed = time.time() - start_time
+    print(f"Training LSA Selesai dalam {elapsed:.2f} detik.")
+
     return model
 
 def embed_query(query_text: str, model: Dict, stopwords: set, use_stemming=False) -> np.ndarray:
@@ -439,7 +474,7 @@ def embed_query(query_text: str, model: Dict, stopwords: set, use_stemming=False
     q_embed = proj * inv_sigma
     return q_embed
 
-def get_top_k_recommendations( query_text: str, model: Dict, stopwords: set, k: int = 5) -> List[Tuple[int, float]]:
+def get_top_k_recommendations(query_text: str, model: Dict, stopwords: set, k: int = 5) -> List[Tuple[int, float]]:
     """
     Mendapatkan top-k dokumen paling mirip berdasarkan cosine similarity.
 
@@ -459,7 +494,7 @@ def get_top_k_recommendations( query_text: str, model: Dict, stopwords: set, k: 
 
 # 2.2.7 FUNGSI QUERY UTAMA 
 
-def query_lsa(query_text: str, model: Dict, stopwords: set, top_k: int = 5, use_stemming=False):
+def query_lsa(query_text: str, model: Dict, stop_words: set = set(stopwords.words('english')), top_k: int = 5, use_stemming=False):
     """
     Fungsi high-level untuk melakukan query LSA.
     Frontend atau komponen lain cukup memanggil fungsi ini.
@@ -480,18 +515,15 @@ def query_lsa(query_text: str, model: Dict, stopwords: set, top_k: int = 5, use_
     return get_top_k_recommendations(
         query_text=query_text,
         model=model,
-        stopwords=stopwords,
+        stopwords=stop_words,
         k=top_k
     )
 
-# LOADER MODEL
-import pickle
-
-def load_lsa_model(model_path: str) -> Dict:
-    """
-    Memuat model LSA dari file pickle.
-    Digunakan saat aplikasi utama run agar tidak perlu build model ulang setiap request.
-    """
-    with open(model_path, "rb") as f:
-        model = pickle.load(f)
-    return model
+if __name__ == "__main__":
+    MODEL_PATH = "data/model_lsa.pkl"
+    lsa_model = build_lsa_model(
+        dataset_dir= "data/txt",
+        model_save_path= MODEL_PATH,
+        use_stemming= True,
+        stopwords= set(stopwords.words('english')),
+        k = 50,)
