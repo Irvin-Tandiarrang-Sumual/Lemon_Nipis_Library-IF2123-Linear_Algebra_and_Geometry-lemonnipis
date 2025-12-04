@@ -395,8 +395,8 @@ def build_lsa_model(dataset_dir: str, model_save_path: str, stop_words: set = se
     for p in docs_path_list:
         with open(p, 'r', encoding='utf-8', errors='ignore') as f:
             txt = f.read()
-        raw_texts.append(txt)
-        toks = document_preprocess(txt, stop_words, use_stemming=use_stemming)
+        raw_texts.append(txt) ## ini perlu?
+        toks = document_preprocess(p, stop_words, use_stemming=use_stemming)
         preprocessed.append(toks)
 
     print("Membangun Vocabulary & Matrix...")
