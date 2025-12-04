@@ -1,8 +1,10 @@
-from fastapi import FastAPI, UploadFile, Depends, Request, HTTPException
+from fastapi import FastAPI, UploadFile, Depends, Request, HTTPException, File
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from pathlib import Path
-from image.image_processing import build_pca_model
+from image.image_processing import build_pca_model, query_image_from_model
+from tempfile import NamedTemporaryFile
+import shutil
 import json
 import os
 # data path
@@ -170,5 +172,38 @@ async def search_books_by_title(title_query : str, skip : int = 0, limit :int = 
 
 # (post) search pake image
 @app.post("/api/books/search-by-image")
-async def search_books_by_image(file : UploadFile):
-    pass
+async def search_books_by_image(file : UploadFile = File(...),
+                            book_mapper : dict = Depends(get_book_mapper),
+                            pca_model = Depends(get_pca_model)):
+    if not file:
+        raise HTTPException(status_code=400, detail="File is empty")
+    
+    if not file.filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+        raise HTTPException(status_code=400, detail="File must be image")
+    
+    if not book_mapper:
+        raise HTTPException(status_code=503, detail="Mapper not loaded")
+    
+    if not pca_model:
+        raise HTTPException(status_code=503, detail="PCA Model not loaded")
+    
+    # siapin path untuk si file yg di-upload supaya bisa di-process
+    with NamedTemporaryFile(delete=False) as temp_file:
+        shutil.copyfileobj(file.file, temp_file)
+        temp_file_path = temp_file.name
+
+    # proses cari results
+    query_results = query_image_from_model (temp_file_path, pca_model, top_n= 5)
+
+    for result in query_results:
+        # cari id dari file name "ID.jpg"
+        book_id = result.get("file_name").split('.')[0]
+        book = book_mapper[book_id]
+        result["id"] = book_id
+        result["title"] = book.get("title", "")
+        result["cover"] = book.get("cover", "")
+    return {
+        "uploaded_image_path" : temp_file_path,
+        "query_results" : query_results
+    }
+
