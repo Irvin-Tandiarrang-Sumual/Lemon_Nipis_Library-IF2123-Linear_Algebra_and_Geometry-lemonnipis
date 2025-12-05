@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from image.image_processing import build_pca_model, query_image_from_model
 from tempfile import NamedTemporaryFile
+from document.document_processing import build_lsa_model, query_lsa
 import shutil
 import json
 import os
@@ -21,6 +22,9 @@ MAPPER_PATH = BASE_PATH / "data" / "mapper.json"
 
 # pca model
 PCA_MODEL_PATH = Path(__file__).parent / "pca_model.pkl"
+
+# lsa model
+LSA_MODEL_PATH = Path(__file__).parent / "lsa_model.pkl"
 
 def load_mapper(path : str):
     if not os.path.exists(path):
@@ -49,8 +53,16 @@ async def lifespan(app:FastAPI):
     )
     print("Building pca model success")
 
+    print("Building LSA model...")
+    # load lsa model
+    app.state.lsa_model = build_lsa_model(
+        dataset_dir= str(TXT_DIR_PATH),
+        model_save_path= str(LSA_MODEL_PATH),
+        k = 50,
+        use_stemming= True,
+    )
+    print("Building lsa model success ")
 
-    # load lsa model (soon)
     yield
     print("Shutting Down Server")
 
@@ -62,6 +74,9 @@ async def get_book_mapper(request: Request):
 
 async def get_pca_model(request: Request):
     return request.app.state.pca_model
+
+async def get_lsa_model(request: Request):
+    return request.app.state.lsa_model
 
 app.add_middleware(
     CORSMiddleware,
@@ -134,8 +149,39 @@ async def read_book_detail_content(book_id : str, book_mapper : dict = Depends(g
 
 # (get) detail - recommendation
 @app.get("/api/books/{book_id}/recommendation")
-async def read_book_detail_recommendation(book_id : str, book_mapper : dict = Depends(get_book_mapper)):
-    pass
+async def read_book_detail_recommendation(book_id : str,
+            book_mapper : dict = Depends(get_book_mapper),
+            lsa_model = Depends(get_lsa_model)):
+    
+    if not book_mapper:
+        raise HTTPException(status_code=503, detail="Mapper not loaded")
+    if book_id not in book_mapper:
+        raise HTTPException(status_code=404, detail= "Book ID not found")
+    
+    top_k = 6
+    book = book_mapper[book_id]
+    doc_path = TXT_DIR_PATH / book.get("txt")
+    query_results = query_lsa(str(doc_path), lsa_model, top_k= top_k)
+    buku_yang_dicari_ditemukan = False
+    delete_idx = top_k - 1
+    for i, result in enumerate(query_results):
+        filename = os.path.basename(result["path"])
+        result_book_id = os.path.splitext(filename)[0]
+        result_book = book_mapper[result_book_id]
+        result["id"] = result_book_id
+        result["title"] = result_book.get("title", "")
+        result["cover"] = result_book.get("cover", "")
+        if result_book_id == book_id:
+            # sama dengan yg mo dicari yg mirpnya
+            buku_yang_dicari_ditemukan = True
+            delete_idx = i
+    if buku_yang_dicari_ditemukan:
+        del query_results[delete_idx]
+
+    return {
+        "buku_yang_dicari_ditemukan" : buku_yang_dicari_ditemukan,
+        "recommendations" : query_results
+    }
 
 # (get) search pakai judul
 @app.get("/api/books/search")
