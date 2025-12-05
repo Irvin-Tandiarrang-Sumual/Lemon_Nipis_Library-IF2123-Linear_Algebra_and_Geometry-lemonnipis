@@ -6,14 +6,13 @@ import { Button } from "@heroui/button";
 import { Image } from "@heroui/image";
 import Link from "next/link";
 import { Chip } from "@heroui/chip";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
-// Interface disesuaikan dengan data yang sudah dinormalisasi
 interface SearchResultItem {
     id: string;
     title: string;
     cover: string;
-    score?: number; 
+    score?: number;
     file_name?: string;
 }
 
@@ -26,6 +25,7 @@ const getImageUrl = (coverPath: string) => {
 
 export default function SearchResultPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   
   const [inputType, setInputType] = useState<"image" | "text">("image");
   const [inputContent, setInputContent] = useState<string | null>(null);
@@ -50,10 +50,10 @@ export default function SearchResultPage() {
             console.error("Failed to parse search results", e);
         }
     } else {
-        router.push("/book-collection"); 
+
     }
     setLoading(false);
-  }, [router]);
+  }, [router, searchParams]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading results...</div>;
 

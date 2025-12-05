@@ -41,13 +41,20 @@ export const CustomSearchInput = ({ className }: { className?: string }) => {
   const searchParams = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  const currentQuery = searchParams.get("q") || "";
+  
+  const [inputValue, setInputValue] = useState(currentQuery);
+
   const [previewSource, setPreviewSource] = useState<string | null>(null);
   const [fileType, setFileType] = useState<"image" | "text" | null>(null);
   const [fileName, setFileName] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const currentQuery = searchParams.get("q") || "";
   const API_BASE_URL = "http://localhost:8000";
+
+  useEffect(() => {
+    setInputValue(currentQuery);
+  }, [currentQuery]);
 
   useEffect(() => {
     router.prefetch("/search-result");
@@ -102,7 +109,7 @@ export const CustomSearchInput = ({ className }: { className?: string }) => {
       };
 
       sessionStorage.setItem("searchResultData", JSON.stringify(searchData));
-      router.push("/search-result");
+      router.push(`/search-result?t=${Date.now()}`);
 
     } catch (error) {
       console.error(error);
@@ -123,12 +130,14 @@ export const CustomSearchInput = ({ className }: { className?: string }) => {
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      handleTextSearch(e.currentTarget.value);
+        handleTextSearch(inputValue);
     }
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    const inputElement = event.target;
+
     if (file) {
       if (file.type.startsWith("image/")) {
           const imageUrl = URL.createObjectURL(file);
@@ -145,7 +154,8 @@ export const CustomSearchInput = ({ className }: { className?: string }) => {
           alert("Format file tidak didukung. Harap gunakan Gambar atau .txt");
           return;
       }
-      event.target.value = "";
+      
+      inputElement.value = "";
     }
   };
 
@@ -220,7 +230,8 @@ export const CustomSearchInput = ({ className }: { className?: string }) => {
           input: "text-sm",
           base: "w-full h-10",
         }}
-        defaultValue={currentQuery}
+        value={inputValue}
+        onValueChange={setInputValue} 
         onKeyDown={handleKeyDown}
         startContent={renderStartContent()}
         endContent={
