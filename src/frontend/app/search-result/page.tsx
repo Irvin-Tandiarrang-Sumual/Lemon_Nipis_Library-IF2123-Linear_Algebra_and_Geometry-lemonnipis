@@ -158,6 +158,9 @@ export default function SearchResultPage() {
                                     <div>
                                         <div className="flex justify-between items-start w-full">
                                             <div className="flex flex-col pr-2 w-full">
+                                                <span className={`text-[10px] uppercase font-bold tracking-widest mb-1`}>
+                                                    Book ID : {item.id}
+                                                </span>
                                                 <span className={`text-[10px] uppercase font-bold tracking-widest mb-1 ${inputType === 'text' ? 'text-success' : 'text-default-500'}`}>
                                                     {inputType === 'text' 
                                                         ? `Similarity: ${item.score!.toFixed(4)}` 
