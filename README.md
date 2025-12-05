@@ -11,7 +11,7 @@
 
 Aplikasi web untuk pencarian dan rekomendasi buku menggunakan teknik **Image Similarity (PCA)** dan **Text Similarity (LSA)**.
 
-## 📋 Daftar Isi
+## Daftar Isi
 
 - [Fitur](#-fitur)
 - [Tech Stack](#-tech-stack)
@@ -23,24 +23,24 @@ Aplikasi web untuk pencarian dan rekomendasi buku menggunakan teknik **Image Sim
 
 ---
 
-## ✨ Fitur
+## Fitur
 
-### 🔍 Pencarian
+### Pencarian
 - **Pencarian Judul** - Cari buku berdasarkan nama judul
 - **Pencarian Gambar** - Upload cover buku, sistem akan mencari kesamaan visual
 - **Pencarian Dokumen** - Upload file txt, sistem akan mencari kesamaan konten
 
-### 📚 Rekomendasi
+### Rekomendasi
 - **Rekomendasi LSA** - Rekomendasi buku berdasarkan kesamaan konten teks
 
-### 📖 Detail Buku
+### Detail Buku
 - Lihat cover dan judul buku
 - Baca konten lengkap buku
 - Dapatkan rekomendasi buku serupa
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 ### Frontend
 - **Framework**: Next.js 14 (React)
@@ -55,10 +55,9 @@ Aplikasi web untuk pencarian dan rekomendasi buku menggunakan teknik **Image Sim
 - **CORS**: FastAPI CORS Middleware
 - **File Handling**: FastAPI UploadFile
 
-### Machine Learning
+### Temu Balik
 - **Image Similarity**: PCA (Principal Component Analysis)
 - **Text Similarity**: LSA (Latent Semantic Analysis)
-- **NLP**: NLTK (Porter Stemmer, Tokenization)
 
 ### Data
 - **Format**: JSON (mapper), TXT (dokumen), JPG (cover)
@@ -66,11 +65,11 @@ Aplikasi web untuk pencarian dan rekomendasi buku menggunakan teknik **Image Sim
 
 ---
 
-## 📁 Struktur Project
+## Struktur Project
 
 ```
 algeo2-lemonnipis/
-├── data/                          # 📊 Data terpusat
+├── data/                          # Data terpusat
 │   ├── mapper.json                # Mapping buku (ID, judul, cover, txt)
 │   ├── covers/                    # Cover images (JPG)
 │   ├── txt/                       # Dokumen buku (TXT)
@@ -119,21 +118,21 @@ algeo2-lemonnipis/
 
 ---
 
-## 🚀 Setup & Installation
+## Setup & Installation
 
 ### Prerequisites
 - Python 3.9+
 - Node.js 18+
 - npm atau yarn
 
-### 1️⃣ Clone Repository
+### Clone Repository
 
 ```bash
 git clone https://github.com/lemonnipis/algeo2-lemonnipis.git
 cd algeo2-lemonnipis
 ```
 
-### 2️⃣ Setup Backend
+### Setup Backend
 
 ```bash
 # Navigate ke backend
@@ -155,7 +154,7 @@ pip install fastapi uvicorn python-multipart nltk pillow scikit-learn numpy scip
 python -c "import nltk; nltk.download('punkt'); nltk.download('stopwords')"
 ```
 
-### 3️⃣ Setup Frontend
+### Setup Frontend
 
 ```bash
 # Navigate ke frontend
@@ -170,7 +169,7 @@ yarn install
 echo "NEXT_PUBLIC_API_URL=http://localhost:8000" > .env.local
 ```
 
-### 4️⃣ Prepare Data
+### Prepare Data
 
 Pastikan folder `data/` di root level sudah ada dengan struktur:
 
@@ -196,9 +195,9 @@ data/
 
 ---
 
-## ▶️ Cara Menjalankan
+## Cara Menjalankan
 
-### 1️⃣ Jalankan Backend
+### Jalankan Backend
 
 ```bash
 cd src/backend
@@ -217,19 +216,19 @@ Server akan berjalan di `http://localhost:8000`
 **Output yang diharapkan:**
 ```
 ============================================================
-📍 PATH CONFIGURATION
+PATH CONFIGURATION
 ============================================================
 BASE_PATH: C:\ITB\Semester 3\AlGeo\algeo2-lemonnipis
-DATA_DIR: C:\ITB\Semester 3\AlGeo\algeo2-lemonnipis\data - ✅
+DATA_DIR: C:\ITB\Semester 3\AlGeo\algeo2-lemonnipis\data - 
 ...
 ============================================================
-🚀 Starting Server
+Starting Server
 ============================================================
-✅ Server Ready!
+Server Ready!
 ============================================================
 ```
 
-### 2️⃣ Jalankan Frontend
+### Jalankan Frontend
 
 **Terminal baru:**
 
@@ -244,7 +243,7 @@ yarn dev
 
 Frontend akan berjalan di `http://localhost:3000`
 
-### 3️⃣ Buka di Browser
+### Buka di Browser
 
 ```
 http://localhost:3000
@@ -252,7 +251,7 @@ http://localhost:3000
 
 ---
 
-## 📡 API Documentation
+## API Documentation
 
 ### Base URL
 ```
@@ -261,7 +260,7 @@ http://localhost:8000
 
 ### Endpoints
 
-#### 🔍 **GET** `/api/books`
+#### **GET** `/api/books`
 Dapatkan semua buku dengan pagination
 
 **Query Parameters:**
@@ -285,7 +284,7 @@ Dapatkan semua buku dengan pagination
 
 ---
 
-#### 🔍 **GET** `/api/search`
+#### **GET** `/api/search`
 Cari buku berdasarkan judul
 
 **Query Parameters:**
@@ -304,7 +303,7 @@ Cari buku berdasarkan judul
 
 ---
 
-#### 📖 **GET** `/api/books/{book_id}/content`
+#### **GET** `/api/books/{book_id}/content`
 Dapatkan detail dan konten buku
 
 **Response:**
@@ -319,7 +318,7 @@ Dapatkan detail dan konten buku
 
 ---
 
-#### 💡 **GET** `/api/books/{book_id}/recommendation`
+#### **GET** `/api/books/{book_id}/recommendation`
 Dapatkan rekomendasi buku berdasarkan LSA
 
 **Response:**
@@ -339,7 +338,7 @@ Dapatkan rekomendasi buku berdasarkan LSA
 
 ---
 
-#### 🖼️ **POST** `/api/search/image`
+#### **POST** `/api/search/image`
 Cari buku berdasarkan upload gambar
 
 **Request:**
@@ -364,7 +363,7 @@ Cari buku berdasarkan upload gambar
 
 ---
 
-#### 📄 **POST** `/api/search/document`
+#### **POST** `/api/search/document`
 Cari buku berdasarkan upload dokumen TXT
 
 **Request:**
@@ -380,7 +379,7 @@ Cari buku berdasarkan upload dokumen TXT
 
 ---
 
-#### ❤️ **GET** `/health`
+#### **GET** `/health`
 Health check
 
 **Response:**
@@ -392,7 +391,7 @@ Health check
 
 ---
 
-## 🎯 Fitur Utama
+## Fitur Utama
 
 ### 1. Image Similarity Search (PCA)
 
@@ -430,7 +429,7 @@ Health check
 
 ---
 
-## ⚙️ Konfigurasi
+## Konfigurasi
 
 ### Backend Configuration (`src/backend/main.py`)
 
@@ -462,7 +461,7 @@ export const API_BASE_URL =
 
 ---
 
-## 🧪 Testing
+## Testing
 
 ### Backend Testing
 
@@ -496,7 +495,7 @@ npm run start
 
 ---
 
-## 📝 Catatan Penting
+## Catatan Penting
 
 ### Data Format
 
@@ -524,7 +523,7 @@ npm run start
 
 ---
 
-## 🐛 Troubleshooting
+## roubleshooting
 
 ### Backend tidak start
 
@@ -553,9 +552,9 @@ python -c "import nltk; nltk.download('punkt'); nltk.download('stopwords')"
 ### Models tidak ter-load
 
 ```
-✅ Pastikan data/covers/ dan data/txt/ ada
-✅ Pastikan file format JPG dan TXT valid
-✅ Cek console untuk error messages
+- Pastikan data/covers/ dan data/txt/ ada
+- Pastikan file format JPG dan TXT valid
+- Cek console untuk error messages
 ```
 
 ### Frontend API error
@@ -573,7 +572,7 @@ npm run dev
 
 ---
 
-## 📦 Dependencies
+## Dependencies
 
 ### Backend (`requirements.txt`)
 
@@ -607,4 +606,4 @@ MIT License - Bebas digunakan untuk keperluan apapun
 
 ---
 
-**Happy Searching! 🍋📚**
+**Happy Searching! 🍋**
