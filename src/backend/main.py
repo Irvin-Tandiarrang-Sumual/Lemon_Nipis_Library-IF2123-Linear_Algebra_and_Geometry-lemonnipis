@@ -58,7 +58,7 @@ async def lifespan(app:FastAPI):
     print("Building pca model ...")
     # load pca model
     app.state.pca_model = build_pca_model(
-        dataset_dir= str(COVERS_DIR_PATH),
+        dataset_dir= str(COVERS_DIR_PATH / "covers"),
         model_save_path= str(PCA_MODEL_PATH),
         target_width=200,
         target_height=300,
@@ -69,7 +69,7 @@ async def lifespan(app:FastAPI):
     print("Building LSA model...")
     # load lsa model
     app.state.lsa_model = build_lsa_model(
-        dataset_dir= str(TXT_DIR_PATH),
+        dataset_dir= str(TXT_DIR_PATH / "txt"),
         model_save_path= str(LSA_MODEL_PATH),
         k = 50,
         use_stemming= True,
