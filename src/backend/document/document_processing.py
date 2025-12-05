@@ -32,7 +32,7 @@ DEFAULT_STOPWORDS = {
     "weren't", "what", "what's", "when", "when's", "where", "where's", "which",
     "while", "who", "who's", "whom", "why", "why's", "with", "won't", "would",
     "wouldn't", "you", "you'd", "you'll", "you're", "you've", "your", "yours",
-    "yourself", "yourselves"
+    "yourself", "yourselves", "fig", "figure", "et", "al", "ie", "eg", "vol"
 }
 
 # 2.2.1 PERSIAPAN DATA DOKUMEN
