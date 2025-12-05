@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from pathlib import Path
 from image.image_processing import build_pca_model, query_image_from_model
-from tempfile import NamedTemporaryFile
 from document.document_processing import build_lsa_model, query_lsa
 import shutil
 import json
@@ -177,7 +176,7 @@ async def read_book_detail_recommendation(book_id : str, request : Request,
     top_k = 6
     book = book_mapper[book_id]
     doc_path = TXT_DIR_PATH / book.get("txt")
-    query_results = query_lsa(str(doc_path), lsa_model, top_k= top_k)
+    query_results = query_lsa(str(doc_path), lsa_model, top_k= top_k, use_stemming= True)
     buku_yang_dicari_ditemukan = False
     delete_idx = top_k - 1
     for i, result in enumerate(query_results):
@@ -285,26 +284,6 @@ async def search_books_by_image(request : Request, file : UploadFile = File(...)
     except Exception as e:
         print(f" Error : {e}")
         raise HTTPException(status_code=400, detail=str(e))
-    
-    # # siapin path untuk si file yg di-upload supaya bisa di-process
-    # with NamedTemporaryFile(delete=False) as temp_file:
-    #     shutil.copyfileobj(file.file, temp_file)
-    #     temp_file_path = temp_file.name
-
-    # # proses cari results
-    # query_results = query_image_from_model (temp_file_path, pca_model, top_n= 5)
-
-    # for result in query_results:
-    #     # cari id dari file name "ID.jpg"
-    #     book_id = result.get("file_name").split('.')[0]
-    #     book = book_mapper[book_id]
-    #     result["id"] = book_id
-    #     result["title"] = book.get("title", "")
-    #     result["cover"] = book.get("cover", "")
-    # return {
-    #     "uploaded_image_path" : temp_file_path,
-    #     "query_results" : query_results
-    
 
 # (post) search pake document
 @app.post("/api/books/search-by-document")
@@ -332,7 +311,7 @@ async def search_books_by_document(request : Request, file : UploadFile = File(.
         shutil.copyfileobj(file.file, f)
 
     # Proses query
-    query_results = query_lsa(str(saved_path), lsa_model, top_k=5)
+    query_results = query_lsa(str(saved_path), lsa_model, top_k=5, use_stemming=True)
 
     formatted_results = []
     for i, result in enumerate(query_results):
@@ -351,22 +330,3 @@ async def search_books_by_document(request : Request, file : UploadFile = File(.
     return {
         "query_results": formatted_results
     }
-
-    # # siapin path untuk si file yg di-upload supaya bisa di-process
-    # with NamedTemporaryFile(delete=False) as temp_file:
-    #     shutil.copyfileobj(file.file, temp_file)
-    #     temp_file_path = temp_file.name
-
-    # # proses cari results
-    # query_results = query_lsa(temp_file_path, lsa_model, top_k=5)
-
-    # for i, result in enumerate(query_results):
-    #     filename = os.path.basename(result["path"])
-    #     result_book_id = os.path.splitext(filename)[0]
-    #     result_book = book_mapper[result_book_id]
-    #     result["id"] = result_book_id
-    #     result["title"] = result_book.get("title", "")
-    #     result["cover"] = result_book.get("cover", "")
-    # return {
-    #     "query_results" : query_results
-    # }
