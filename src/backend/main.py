@@ -8,9 +8,13 @@ from document.document_processing import build_lsa_model, query_lsa
 import shutil
 import json
 import os
+from datetime import datetime
+from fastapi.staticfiles import StaticFiles
 # data path
 BASE_PATH = Path(__file__).parent.parent.parent
 
+# Folder data
+DATA_DIR_PATH = BASE_PATH / "data"
 # covers
 COVERS_DIR_PATH = BASE_PATH / "data"
 
@@ -26,13 +30,23 @@ PCA_MODEL_PATH = Path(__file__).parent / "pca_model.pkl"
 # lsa model
 LSA_MODEL_PATH = Path(__file__).parent / "lsa_model.pkl"
 
+UPLOADS_DIR_IMG = BASE_PATH / "data" / "uploads" / "image"
+UPLOADS_DIR_TXT = BASE_PATH / "data" / "uploads" / "txt"
+UPLOADS_DIR_IMG.mkdir(parents=True, exist_ok=True)
+UPLOADS_DIR_TXT.mkdir(parents=True, exist_ok=True)
+
 def load_mapper(path : str):
     if not os.path.exists(path):
         print(f"Mapper file {path} tidak ditemukan")
         return {}
     with open(path, 'r', encoding='utf-8') as f:
         return json.load(f)
-    
+def get_full_cover_url(request: Request, relative_path: str):
+    if not relative_path:
+        return ""
+    clean_path = relative_path.replace("\\", "/")
+    return f"{request.base_url}static/{clean_path}"
+
 @asynccontextmanager
 async def lifespan(app:FastAPI):
     print("Starting Server")
@@ -68,15 +82,7 @@ async def lifespan(app:FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# dependency
-async def get_book_mapper(request: Request):
-    return request.app.state.book_mapper
-
-async def get_pca_model(request: Request):
-    return request.app.state.pca_model
-
-async def get_lsa_model(request: Request):
-    return request.app.state.lsa_model
+app.mount("/static", StaticFiles(directory=str(DATA_DIR_PATH)), name="static")
 
 app.add_middleware(
     CORSMiddleware,
@@ -88,23 +94,33 @@ app.add_middleware(
     allow_headers = ["*"],
 )
 
+async def get_book_mapper(request: Request):
+    return request.app.state.book_mapper
+
+async def get_pca_model(request: Request):
+    return request.app.state.pca_model
+
+async def get_lsa_model(request: Request):
+    return request.app.state.lsa_model
+
 @app.get("/")
 async def read_root():
     return {"message" : "Hallo sar!"}
 
 # (get) all book
 @app.get("/api/books")
-async def read_books(skip : int = 0, limit : int = 15,
+async def read_books(request: Request, skip : int = 0, limit : int = 15,
                     book_mapper : dict = Depends(get_book_mapper)):
     if not book_mapper:
         raise HTTPException(status_code=503, detail="Mapper not loaded")
     all_books = []
     for book_id, book in book_mapper.items():
+        full_cover_url = get_full_cover_url(request, book.get("cover", ""))
         all_books.append(
             {
                 "id" : book_id,
                 "title" : book.get("title", "Unknown"),
-                "cover" : book.get("cover", ""),
+                "cover" : full_cover_url,
                 "txt" : book.get("txt", "")
             }
         )
@@ -116,7 +132,7 @@ async def read_books(skip : int = 0, limit : int = 15,
 
 # (get) detail - content
 @app.get("/api/books/{book_id}/content")
-async def read_book_detail_content(book_id : str, book_mapper : dict = Depends(get_book_mapper)):
+async def read_book_detail_content(book_id : str, request : Request, book_mapper : dict = Depends(get_book_mapper)):
     if not book_mapper:
         raise HTTPException(status_code=503, detail="Mapper not loaded")
     
@@ -126,9 +142,9 @@ async def read_book_detail_content(book_id : str, book_mapper : dict = Depends(g
     print(f"Book id : {book_id}")
     book = book_mapper[book_id]
 
-    # ambil path masing-masing
-    cover_path = book.get("cover", "")
+    full_cover_url = get_full_cover_url(request, book.get("cover", ""))
     txt_relative_path = book.get("txt", "")
+
     if not txt_relative_path:
         raise HTTPException(status_code=404, detail= "Text file path not found")
     txt_path = TXT_DIR_PATH / txt_relative_path
@@ -141,7 +157,7 @@ async def read_book_detail_content(book_id : str, book_mapper : dict = Depends(g
         return {
             "id" : book_id,
             "title" : book.get("title", "Unknown"),
-            "cover" : cover_path,
+            "cover" : full_cover_url,
             "content" : content
         }
     except Exception as e:
@@ -149,7 +165,7 @@ async def read_book_detail_content(book_id : str, book_mapper : dict = Depends(g
 
 # (get) detail - recommendation
 @app.get("/api/books/{book_id}/recommendation")
-async def read_book_detail_recommendation(book_id : str,
+async def read_book_detail_recommendation(book_id : str, request : Request,
             book_mapper : dict = Depends(get_book_mapper),
             lsa_model = Depends(get_lsa_model)):
     
@@ -168,9 +184,10 @@ async def read_book_detail_recommendation(book_id : str,
         filename = os.path.basename(result["path"])
         result_book_id = os.path.splitext(filename)[0]
         result_book = book_mapper[result_book_id]
+        full_cover_url = get_full_cover_url(request, result_book.get("cover", ""))
         result["id"] = result_book_id
         result["title"] = result_book.get("title", "")
-        result["cover"] = result_book.get("cover", "")
+        result["cover"] = full_cover_url
         if result_book_id == book_id:
             # sama dengan yg mo dicari yg mirpnya
             buku_yang_dicari_ditemukan = True
@@ -185,7 +202,7 @@ async def read_book_detail_recommendation(book_id : str,
 
 # (get) search pakai judul
 @app.get("/api/books/search")
-async def search_books_by_title(title_query : str, skip : int = 0, limit :int = 15, book_mapper : dict = Depends(get_book_mapper)):
+async def search_books_by_title(title_query : str, request : Request, skip : int = 0, limit :int = 15, book_mapper : dict = Depends(get_book_mapper)):
     if not book_mapper:
         raise HTTPException(status_code=503, detail="Mapper not loaded")
     
@@ -197,11 +214,12 @@ async def search_books_by_title(title_query : str, skip : int = 0, limit :int = 
     for book_id, book in book_mapper.items():
         book_title = book.get("title", "Unknown")
         if (title_query.lower() in book_title.lower()): #biar case-insensitive
+            full_cover_url = get_full_cover_url(request, book.get("cover", ""))
             search_result.append(
                 {
                     "id" : book_id,
                     "title" : book_title,
-                    "cover" : book.get("cover", ""),
+                    "cover" : full_cover_url,
                     "txt" : book.get("txt", "")
                 }
             )
@@ -217,7 +235,7 @@ async def search_books_by_title(title_query : str, skip : int = 0, limit :int = 
 
 # (post) search pake image
 @app.post("/api/books/search-by-image")
-async def search_books_by_image(file : UploadFile = File(...),
+async def search_books_by_image(request : Request, file : UploadFile = File(...),
                             book_mapper : dict = Depends(get_book_mapper),
                             pca_model = Depends(get_pca_model)):
     if not file:
@@ -232,29 +250,65 @@ async def search_books_by_image(file : UploadFile = File(...),
     if not pca_model:
         raise HTTPException(status_code=503, detail="PCA Model not loaded")
     
-    # siapin path untuk si file yg di-upload supaya bisa di-process
-    with NamedTemporaryFile(delete=False) as temp_file:
-        shutil.copyfileobj(file.file, temp_file)
-        temp_file_path = temp_file.name
+    try:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_extension = Path(file.filename).suffix
+        saved_filename = f"search_{timestamp}{file_extension}"
+        saved_path = UPLOADS_DIR_IMG / saved_filename
 
-    # proses cari results
-    query_results = query_image_from_model (temp_file_path, pca_model, top_n= 5)
+        with open(saved_path, 'wb') as f:
+            content = await file.read()
+            f.write(content)
+        
+        query_results = query_image_from_model(str(saved_path), pca_model, top_n=5)
+        
+        formatted_results = []
+        for result in query_results:
+            # Asumsi result["file_name"] adalah "38427.jpg"
+            book_id = result.get("file_name").split('.')[0]
+            
+            if book_id in book_mapper:
+                book = book_mapper[book_id]
+                full_cover_url = get_full_cover_url(request, book.get("cover", ""))
+                
+                result["id"] = book_id
+                result["title"] = book.get("title", "")
+                result["cover"] = full_cover_url
+                formatted_results.append(result)
+        
+        uploaded_image_url = f"{request.base_url}static/uploads/image/{saved_filename}"
 
-    for result in query_results:
-        # cari id dari file name "ID.jpg"
-        book_id = result.get("file_name").split('.')[0]
-        book = book_mapper[book_id]
-        result["id"] = book_id
-        result["title"] = book.get("title", "")
-        result["cover"] = book.get("cover", "")
-    return {
-        "uploaded_image_path" : temp_file_path,
-        "query_results" : query_results
-    }
+        return {
+            "uploaded_image_path": uploaded_image_url,
+            "query_results": formatted_results
+        }
+    except Exception as e:
+        print(f" Error : {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    
+    # # siapin path untuk si file yg di-upload supaya bisa di-process
+    # with NamedTemporaryFile(delete=False) as temp_file:
+    #     shutil.copyfileobj(file.file, temp_file)
+    #     temp_file_path = temp_file.name
+
+    # # proses cari results
+    # query_results = query_image_from_model (temp_file_path, pca_model, top_n= 5)
+
+    # for result in query_results:
+    #     # cari id dari file name "ID.jpg"
+    #     book_id = result.get("file_name").split('.')[0]
+    #     book = book_mapper[book_id]
+    #     result["id"] = book_id
+    #     result["title"] = book.get("title", "")
+    #     result["cover"] = book.get("cover", "")
+    # return {
+    #     "uploaded_image_path" : temp_file_path,
+    #     "query_results" : query_results
+    
 
 # (post) search pake document
 @app.post("/api/books/search-by-document")
-async def search_books_by_document(file : UploadFile = File(...),
+async def search_books_by_document(request : Request, file : UploadFile = File(...),
                             book_mapper : dict = Depends(get_book_mapper),
                             lsa_model = Depends(get_lsa_model)):
     if not file:
@@ -268,22 +322,51 @@ async def search_books_by_document(file : UploadFile = File(...),
     
     if not lsa_model:
         raise HTTPException(status_code=503, detail="LSA Model not loaded")
+
+    # Simpan temp file
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    saved_filename = f"search_{timestamp}.txt"
+    saved_path = UPLOADS_DIR_TXT / saved_filename
     
-    # siapin path untuk si file yg di-upload supaya bisa di-process
-    with NamedTemporaryFile(delete=False) as temp_file:
-        shutil.copyfileobj(file.file, temp_file)
-        temp_file_path = temp_file.name
+    with open(saved_path, 'wb') as f:
+        shutil.copyfileobj(file.file, f)
 
-    # proses cari results
-    query_results = query_lsa(temp_file_path, lsa_model, top_k=5)
+    # Proses query
+    query_results = query_lsa(str(saved_path), lsa_model, top_k=5)
 
+    formatted_results = []
     for i, result in enumerate(query_results):
         filename = os.path.basename(result["path"])
         result_book_id = os.path.splitext(filename)[0]
-        result_book = book_mapper[result_book_id]
-        result["id"] = result_book_id
-        result["title"] = result_book.get("title", "")
-        result["cover"] = result_book.get("cover", "")
+        
+        if result_book_id in book_mapper:
+            result_book = book_mapper[result_book_id]
+            full_cover_url = get_full_cover_url(request, result_book.get("cover", ""))
+            
+            result["id"] = result_book_id
+            result["title"] = result_book.get("title", "")
+            result["cover"] = full_cover_url
+            formatted_results.append(result)
+    
     return {
-        "query_results" : query_results
+        "query_results": formatted_results
     }
+
+    # # siapin path untuk si file yg di-upload supaya bisa di-process
+    # with NamedTemporaryFile(delete=False) as temp_file:
+    #     shutil.copyfileobj(file.file, temp_file)
+    #     temp_file_path = temp_file.name
+
+    # # proses cari results
+    # query_results = query_lsa(temp_file_path, lsa_model, top_k=5)
+
+    # for i, result in enumerate(query_results):
+    #     filename = os.path.basename(result["path"])
+    #     result_book_id = os.path.splitext(filename)[0]
+    #     result_book = book_mapper[result_book_id]
+    #     result["id"] = result_book_id
+    #     result["title"] = result_book.get("title", "")
+    #     result["cover"] = result_book.get("cover", "")
+    # return {
+    #     "query_results" : query_results
+    # }
