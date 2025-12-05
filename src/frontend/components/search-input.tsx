@@ -5,7 +5,12 @@ import { Input } from "@heroui/input";
 import { SearchIcon, CameraIcon, CloseIcon } from "@/components/icons"; 
 import { useRouter, useSearchParams } from "next/navigation";
 
-// Spinner kecil untuk indikator loading
+const DocumentIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+  </svg>
+);
+
 const LoadingSpinner = () => (
   <svg className="animate-spin h-4 w-4 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -22,12 +27,23 @@ const fileToBase64 = (file: File): Promise<string> => {
   });
 };
 
+const readTextFile = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsText(file);
+    });
+};
+
 export const CustomSearchInput = ({ className }: { className?: string }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [previewSource, setPreviewSource] = useState<string | null>(null);
+  const [fileType, setFileType] = useState<"image" | "text" | null>(null);
+  const [fileName, setFileName] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
   const currentQuery = searchParams.get("q") || "";
@@ -37,39 +53,64 @@ export const CustomSearchInput = ({ className }: { className?: string }) => {
     router.prefetch("/search-result");
   }, [router]);
 
-  const handleAutoSearchImage = async (file: File) => {
+  const handleAutoSearchFile = async (file: File, type: "image" | "text") => {
     setIsLoading(true); 
     const formData = new FormData();
     formData.append("file", file);
 
     try {
-      const base64Promise = fileToBase64(file);
-      const apiPromise = fetch(`${API_BASE_URL}/api/books/search-by-image`, {
-        method: "POST",
-        body: formData,
-      });
+      let apiPromise;
+      let inputPreview;
 
-      const [base64Input, res] = await Promise.all([base64Promise, apiPromise]);
+      if (type === "image") {
+        inputPreview = await fileToBase64(file);
+        apiPromise = fetch(`${API_BASE_URL}/api/books/search-by-image`, {
+            method: "POST",
+            body: formData,
+        });
+      } else {
+        inputPreview = await readTextFile(file); 
+        apiPromise = fetch(`${API_BASE_URL}/api/books/search-by-document`, {
+            method: "POST",
+            body: formData,
+        });
+      }
 
-      if (!res.ok) throw new Error("Gagal mencari gambar");
+      const res = await apiPromise;
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Server Error: ${res.status} - ${errorText}`);
+      }
+      
       const data = await res.json();
 
+      const normalizedResults = data.query_results.map((item: any) => ({
+         id: item.id,
+         title: item.title,
+         cover: item.cover,
+         score: item.score !== undefined ? item.score : item.similarity, 
+         file_name: item.file_name
+      }));
+
       const searchData = {
-        inputImage: base64Input, 
-        results: data.query_results,
+        inputType: type, 
+        inputContent: inputPreview, 
+        inputName: file.name,
+        results: normalizedResults,
         timestamp: new Date().getTime()
       };
 
       sessionStorage.setItem("searchResultData", JSON.stringify(searchData));
-      
       router.push("/search-result");
 
     } catch (error) {
       console.error(error);
-      alert("Gagal memproses gambar atau koneksi ke server bermasalah.");
-      setSelectedImage(null);
-      setIsLoading(false);
-    } 
+      alert(`Gagal memproses ${type === 'image' ? 'gambar' : 'dokumen'}. Pastikan backend menyala.`);
+      handleClearFile();
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   const handleTextSearch = (query: string) => {
@@ -89,24 +130,76 @@ export const CustomSearchInput = ({ className }: { className?: string }) => {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setSelectedImage(imageUrl);
-      
-      setTimeout(() => {
-          handleAutoSearchImage(file);
-      }, 100);
-
+      if (file.type.startsWith("image/")) {
+          const imageUrl = URL.createObjectURL(file);
+          setPreviewSource(imageUrl);
+          setFileType("image");
+          setFileName(file.name);
+          setTimeout(() => handleAutoSearchFile(file, "image"), 100);
+      } else if (file.type === "text/plain" || file.name.endsWith(".txt")) {
+          setPreviewSource(null);
+          setFileType("text");
+          setFileName(file.name);
+          setTimeout(() => handleAutoSearchFile(file, "text"), 100);
+      } else {
+          alert("Format file tidak didukung. Harap gunakan Gambar atau .txt");
+          return;
+      }
       event.target.value = "";
     }
   };
 
-  const handleCameraClick = () => {
+  const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleClearImage = () => {
-    setSelectedImage(null);
+  const handleClearFile = () => {
+    setPreviewSource(null);
+    setFileType(null);
+    setFileName("");
     setIsLoading(false);
+  };
+
+  const renderStartContent = () => {
+    if (!fileType) return <SearchIcon className="text-base text-default-400 pointer-events-none flex-shrink-0" />;
+
+    return (
+        <div className="flex items-center gap-2 mr-1 max-w-[120px]">
+            <div className={`relative flex items-center justify-center rounded overflow-hidden border border-default-300 ${fileType === 'image' ? 'w-8 h-8' : 'w-auto h-8 px-2 bg-default-200'}`}>
+                
+                {fileType === "image" && previewSource && (
+                    <img 
+                        src={previewSource} 
+                        alt="Preview" 
+                        className={`w-full h-full object-cover ${isLoading ? 'opacity-50' : 'opacity-100'}`} 
+                    />
+                )}
+
+                {fileType === "text" && (
+                    <div className="flex items-center gap-1 text-xs text-default-600 font-medium">
+                        <DocumentIcon className="w-4 h-4" />
+                        <span className="truncate max-w-[60px]">{fileName}</span>
+                    </div>
+                )}
+
+                {isLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                        <LoadingSpinner />
+                    </div>
+                )}
+            </div>
+            
+            {!isLoading && (
+                <button
+                    onClick={handleClearFile}
+                    className="text-default-400 hover:text-danger p-0.5 rounded-full hover:bg-default-200 transition-colors"
+                    type="button"
+                >
+                    <CloseIcon className="w-4 h-4" />
+                </button>
+            )}
+        </div>
+    );
   };
 
   return (
@@ -116,7 +209,7 @@ export const CustomSearchInput = ({ className }: { className?: string }) => {
         ref={fileInputRef}
         onChange={handleFileChange}
         className="hidden"
-        accept="image/*"
+        accept="image/*, .txt, text/plain"
       />
 
       <Input
@@ -129,49 +222,20 @@ export const CustomSearchInput = ({ className }: { className?: string }) => {
         }}
         defaultValue={currentQuery}
         onKeyDown={handleKeyDown}
-        startContent={
-          selectedImage ? (
-            <div className="flex items-center gap-2 mr-1">
-              <div className="relative w-8 h-8 rounded overflow-hidden border border-default-300">
-                <img 
-                    src={selectedImage} 
-                    alt="Preview" 
-                    className={`w-full h-full object-cover transition-opacity ${isLoading ? 'opacity-50' : 'opacity-100'}`} 
-                />
-                {isLoading && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/10">
-                        <LoadingSpinner />
-                    </div>
-                )}
-              </div>
-              
-              {!isLoading && (
-                  <button
-                    onClick={handleClearImage}
-                    className="text-default-400 hover:text-danger p-0.5 rounded-full hover:bg-default-200 transition-colors"
-                    type="button"
-                  >
-                    <CloseIcon className="w-4 h-4" />
-                  </button>
-              )}
-            </div>
-          ) : (
-            <SearchIcon className="text-base text-default-400 pointer-events-none flex-shrink-0" />
-          )
-        }
+        startContent={renderStartContent()}
         endContent={
           <button
             className="focus:outline-none hover:opacity-70 text-default-400 hover:text-primary transition-colors"
             type="button"
-            onClick={handleCameraClick}
+            onClick={handleUploadClick}
             disabled={isLoading}
-            title="Upload Image"
+            title="Upload Image or Document"
           >
             <CameraIcon className="flex-shrink-0" />
           </button>
         }
         labelPlacement="outside"
-        placeholder={isLoading ? "Sedang menganalisis gambar..." : selectedImage ? "Mencari..." : "Search title or import image..."}
+        placeholder={isLoading ? "Sedang memproses..." : fileType ? "Mencari..." : "Search title, image or .txt..."}
         type="search"
       />
     </div>
