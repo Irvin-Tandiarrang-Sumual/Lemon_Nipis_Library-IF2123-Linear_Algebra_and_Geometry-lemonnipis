@@ -55,10 +55,9 @@ Aplikasi web untuk pencarian dan rekomendasi buku menggunakan teknik **Image Sim
 - **CORS**: FastAPI CORS Middleware
 - **File Handling**: FastAPI UploadFile
 
-### Machine Learning
+### Temu Balik
 - **Image Similarity**: PCA (Principal Component Analysis)
 - **Text Similarity**: LSA (Latent Semantic Analysis)
-- **NLP**: NLTK (Porter Stemmer, Tokenization)
 
 ### Data
 - **Format**: JSON (mapper), TXT (dokumen), JPG (cover)
