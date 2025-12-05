@@ -1,0 +1,456 @@
+\documentclass[a4paper,12pt]{article}
+
+% Package
+\usepackage[edges]{forest} % optional, untuk versi lebih visual
+\usepackage{dirtree}       % untuk struktur folder sederhana
+\usepackage{placeins}
+\usepackage{listings}
+\usepackage{xcolor}
+\definecolor{commentgray}{gray}{0.45}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}   % untuk gambar
+\usepackage{setspace}   % untuk spasi
+\usepackage{cite}       % untuk citation IEEE style
+\usepackage{hyperref}   % untuk tautan
+\usepackage{tocloft}    % untuk memperindah daftar isi
+\usepackage{enumitem}
+\usepackage{fancyhdr}   % untuk header dan footer
+\usepackage{lastpage}   % untuk referensi ke halaman terakhir
+\usepackage[hidelinks]{hyperref}   % untuk tautan tanpa border
+
+\setlist{itemsep=0pt, parsep=5pt}
+
+\pagestyle{fancy}
+\fancyhf{} % Hapus header/footer default
+
+\fancyhead[L]{
+    \includegraphics[height=0.8cm]{logo_itb.jpg}\hspace{0.2cm}
+    \includegraphics[height=0.8cm]{logo_steiitb.jpg}\hspace{0.2cm}
+    \includegraphics[height=0.8cm]{logo_irk.jpg}
+}
+\fancyhead[R]{
+    \footnotesize
+    \textbf{IF2123 Aljabar Linier dan Geometri} \\
+    Laporan Tugas Besar 2 \\
+    \textit{Semester I 2025/2026}
+}
+
+\fancyfoot[L]{\footnotesize Kelompok 10 LemonNipis}
+\fancyfoot[C]{} % Kosongkan tengah
+\fancyfoot[R]{\footnotesize Halaman \thepage\ dari \pageref{LastPage}}
+
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% Halaman pertama (cover) tanpa header/footer
+\fancypagestyle{plain}{
+    \fancyhf{}
+    \renewcommand{\headrulewidth}{0pt}
+    \renewcommand{\footrulewidth}{0pt}
+}
+
+\geometry{
+    left=1in,
+    right=1in,
+    top=1.2in,
+    bottom=1.2in,
+    headheight=30pt  % disesuaikan untuk logo horizontal
+}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    {\bfseries\LARGE LAPORAN \\[0.5em]
+    IF2123 Aljabar Linier dan Geometri \\[0.5em]
+    Tugas Besar 2 \\[0.5em]
+    Semester I 2025/2026 \par}
+
+    \vspace{1cm}
+    \includegraphics[width=0.5\textwidth]{lemon_nipis.jpg} \\[2cm]
+    Disusun oleh: \\[0.5em]
+    {\bfseries Kelompok 10 LemonNipis \\
+               Niko Samuel Simanjuntak — 13524029  \\ 
+               Irvin Tandiarrang Sumual — 13524030    \\ 
+               Kalyca Nathania B. Manullang — 13524071 } \\[2cm]
+
+    Institut Teknologi Bandung \\[0.5em]
+    2025
+\end{titlepage}
+
+% ----- BAB 1: PENDAHULUAN -----
+\section{PENDAHULUAN}
+
+\subsection{Kisah}
+Di Desa Konohagakure, hiduplah dua orang mahasiswa Teknik Informatika bernama Ayu dan Asep Kasep. Akhir-akhir ini, Ayu merasa kewalahan memahami materi dekomposisi matriks yang diajarkan dalam mata kuliah IF2123 Aljabar Linier dan Geometri karena ketimbang memperhatikan penjelasan dosen di depan, ia malah asyik \textit{doomscrolling} di media sosial. Supaya bisa bertanggung jawab kepada kedua orang tuanya yang telah membiayai kuliahnya, Ayu pun bertekad untuk memperbaiki situasi dengan belajar ke perpustakaan. Sesampainya di sana, ia takjub akan banyaknya koleksi buku yang tersedia. Sejak saat itu, Ayu pun gemar mengunjungi perpustakaan untuk mengeksplorasi berbagai macam buku yang menarik minatnya.
+
+Di sisi lain, Asep adalah seorang mahasiswa yang bekerja paruh waktu sebagai pustakawan di perpustakaan kampus. Sejak Ayu mulai rajin berkunjung ke perpustakaan, Asep sering membantunya mencari buku-buku yang diinginkannya. Awalnya, Ayu mengira Asep adalah seorang \textit{performative male} yang hanya ingin pamer di hadapannya. Apalagi, Asep sering sekali minum matcha. Namun, seiring berjalannya waktu, Ayu menyadari bahwa Asep adalah sosok yang cerdas dan tulus dalam membantu sesama. Asep juga sadar bahwa Ayu adalah pribadi yang tekun dan pantang menyerah. Akhirnya, mereka pun jatuh cinta.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{ayudanasep.jpg}
+    \caption{Anggaplah ini Ayu dan Asep.}
+    \small\textit{Sumber: Jaap Buitendijk; Copyright 2007 Warner Bros. Ent.; Harry Potter Publishing Rights J.K.R.}
+    \label{fig:ayu_asep}
+\end{figure}
+
+Asep menyadari bahwa Ayu sering kali kesulitan menemukan buku yang diinginkannya atau melanjutkan bacaan dari buku yang pernah dipinjamnya sebelumnya. Hal ini dikarenakan sistem pencarian buku di perpustakaan yang masih konvensional dan kurang efisien. Melihat hal tersebut, Asep terinspirasi untuk mengembangkan sebuah sistem temu balik informasi berbasis \textit{singular value decomposition} (SVD) dan vektor eigen yang dapat membantu Ayu dan pengunjung perpustakaan lainnya dalam menemukan buku dengan lebih mudah dan cepat.
+
+Untuk membuktikan bahwa mahasiswa Teknik Informatika memanglah solid, mari kita bantu Asep dalam merancang dan mengimplementasikan sistem temu balik informasi tersebut dengan memanfaatkan konsep-konsep aljabar linier yang telah kita pelajari di mata kuliah IF2123 Aljabar Linier dan Geometri.
+
+\subsection{Tujuan}
+Pada Tugas Besar 2 ini, kita akan mengembangkan sebuah aplikasi web untuk sistem perpustakaan digital. Anda akan diberikan sebuah dataset berisi koleksi buku dengan rincian judul, konten (berupa file txt), dan sampul (berupa file jpg). Aplikasi ini harus mampu menampilkan daftar buku dalam dataset dengan paginasi, menampilkan konten buku untuk dibaca, melakukan pencarian buku berdasarkan input sampul gambar dari pengguna atau kata kunci teks dari pengguna, serta memberikan rekomendasi buku yang relevan berdasarkan buku yang sedang dibaca.
+
+% ----- BAB 2: DASAR TEORI -----
+\section{DASAR TEORI}
+
+\subsection{Nilai Eigen dan Vektor Eigen}
+Diberikan matriks persegi \( A \) berukuran \( n \times n \), vektor tak-nol \( \mathbf{x} \) disebut vektor eigen jika \( A\mathbf{x} = \lambda \mathbf{x} \), dengan \( \lambda \) sebagai nilai eigen. Vektor eigen hanya mengalami perubahan skala saat ditransformasi, merepresentasikan arah karakteristik transformasi linear. Nilai eigen dicari dari persamaan karakteristik \( \det(A - \lambda I) = 0 \), lalu vektor eigen diperoleh dari \( (A - \lambda I)\mathbf{x} = \mathbf{0} \). Secara geometris, eigenvector menunjukkan arah dominan transformasi, sedangkan eigenvalue menentukan besar kontribusi (varians atau energi).
+
+\subsection{Singular Value Decomposition (SVD)}
+Setiap matriks \( A \) berukuran \( m \times n \) dapat didekomposisi menjadi \( A = U \Sigma V^T \), dengan \( U \) dan \( V \) matriks ortogonal, serta \( \Sigma \) matriks diagonal berisi singular values \( \sigma_1 \geq \sigma_2 \geq \cdots \). Vektor-vektor pada \( V \) adalah eigenvector dari \( A^TA \) dengan \( \sigma_i^2 \) sebagai eigenvalue-nya. SVD memberikan landasan kuat untuk ekstraksi fitur dari teks dan gambar.
+
+\subsection{Hubungan Eigenvector dengan Representasi Fitur Utama}
+Matriks kovarian \( C = \frac{1}{n} XX^T \) merepresentasikan penyebaran data. Eigenvalue menunjukkan besar varians pada arah eigenvector. Arah dengan eigenvalue terbesar merupakan fitur paling informatif, sedangkan arah dengan eigenvalue kecil mengandung noise. Eigenvector dari matriks kovarian atau dari \( A^TA \) melalui SVD menangkap pola dominan seperti komponen bentuk pada gambar atau hubungan kata pada teks.
+
+\subsection{Mengapa SVD Lebih Cocok daripada Eigendecomposition}
+SVD lebih cocok digunakan daripada eigendecomposition untuk tugas besar ini karena tiga alasan utama. Pertama, SVD dapat bekerja pada matriks tidak persegi dan berukuran besar, sedangkan eigendecomposition hanya berlaku untuk matriks persegi. Dataset teks dan gambar dalam tugas ini berbentuk matriks dokumen-kata atau gambar flatten yang tidak persegi, sehingga fleksibilitas SVD menjadi keunggulan. Kedua, SVD lebih stabil secara numerik dan robust terhadap noise, sementara menghitung eigen dari matriks \( A^TA \) dapat memperbesar kesalahan numerik karena pemangkatan nilai besar dan dominansi noise. Ketiga, SVD menghindari komputasi matriks kovarian \( A^TA \) yang mahal dan tidak stabil untuk dataset besar. Dengan SVD, fitur utama dapat diperoleh langsung dari dekomposisi matriks \( A \) tanpa perlu menghitung matriks kovarian terlebih dahulu, sehingga lebih efisien dan andal.
+
+\subsection{Mengapa Eigenvector dari Matriks Covariance Merepresentasikan Fitur Utama}
+Matriks kovarian mengukur varians data pada setiap arah. Eigenvector dengan eigenvalue terbesar menunjukkan arah dengan penyebaran data terbesar sehingga menjadi fitur paling informatif. Oleh karena itu, PCA menggunakan eigenvector kovarian sebagai principal components untuk menangkap variasi terpenting dalam data dengan dimensi lebih rendah.
+
+\subsection{Kapan PCA Berbasis SVD Kurang Optimal untuk Kueri Gambar}
+PCA berbasis SVD menjadi kurang optimal untuk kueri gambar dalam beberapa kondisi. Pertama, PCA sensitif terhadap perbedaan pencahayaan ekstrem karena perubahan brightness memengaruhi varians global, sehingga gambar dengan objek sama tetapi pencahayaan berbeda dapat direpresentasikan secara jauh berbeda. Kedua, PCA memiliki keterbatasan terhadap transformasi geometris seperti rotasi, translasi, atau scaling karena bekerja pada representasi piksel linear; transformasi tersebut menggeser posisi piksel dan membuat eigenvector tidak konsisten. Ketiga, metode ini cenderung mengabaikan detail kecil (seperti kontur tipis atau tekstur halus) yang memiliki varians rendah karena lebih berfokus pada pola global dengan varians besar. Keempat, pada gambar yang sangat noisy atau bertekstur kompleks, noise dengan varians tinggi dapat mendominasi principal components dan mengalihkan fokus PCA. Untuk kasus-kasus tersebut, metode berbasis fitur lokal seperti SIFT, ORB, atau CNN sebenarnya lebih cocok, namun tidak digunakan dalam tugas besar ini karena keterbatasan ruang lingkup.
+
+\section{DESAIN DAN IMPLEMENTASI}
+
+\subsection{Arsitektur Aplikasi}
+Aplikasi dirancang dengan arsitektur full-stack yang memisahkan frontend (Next.js) dan backend (FastAPI). Terdiri dari empat komponen: frontend untuk antarmuka pengguna, backend untuk menangani permintaan, model dan dataset berisi data buku dan model praproses, serta modul pemrosesan data (LSA untuk teks, substring matching untuk judul, PCA untuk gambar). Alur sistem: \textbf{Dataset → Preprocessing → Model → Query → Hasil}.
+
+\subsection{Teknologi yang Digunakan}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|p{8cm}|}
+    \hline
+    \textbf{Teknologi} & \textbf{Peran} \\ \hline
+    \multicolumn{2}{|c|}{\textbf{Backend}} \\ \hline
+    Python 3.x & Bahasa utama backend \\ \hline
+    FastAPI & Framework API \\ \hline
+    NumPy & Operasi matriks (TF-IDF, SVD, PCA) \\ \hline
+    Regex (re) & Tokenisasi teks \\ \hline
+    NLTK & Stemming dan stopword removal \\ \hline
+    Pickle & Penyimpanan model LSA \\ \hline
+    PIL / OpenCV & Pengolahan gambar \\ \hline
+    \multicolumn{2}{|c|}{\textbf{Frontend}} \\ \hline
+    Next.js 14 & Framework React \\ \hline
+    HeroUI v2 & Komponen UI \\ \hline
+    Tailwind CSS & Styling \\ \hline
+    TypeScript & Tipe statis \\ \hline
+    Framer Motion & Animasi \\ \hline
+    \end{tabular}
+    \caption{Teknologi yang Digunakan}
+    \label{tab:teknologi-sistem}
+\end{table}
+
+\subsection{Struktur Program dan Modul-Modul Penting}
+
+\begin{verbatim}
+root/
+    data/
+    docs/
+    src/
+        backend/
+            document/
+                document_processing.py
+            image/
+                image_processing.py
+                tempCodeRunnerFile.py
+                __init__.py
+            model/
+                build_model.py
+            .gitkeep
+            main.py
+        frontend/
+            .vscode/
+                settings.json
+            app/
+                book-collection/
+                    [id]/
+                        page.tsx
+                    layout.tsx
+                    page.tsx
+                search-result/
+                    page.tsx
+                error.tsx
+                layout.tsx
+                page.tsx
+                providers.tsx
+            components/
+                book-detail/
+            config/
+                fonts.ts
+                site.ts
+            public/
+                favicon.ico
+                next.svg
+                vercel.svg
+            styles/
+                global.css
+            types/
+                index.ts
+            .gitignore
+            .gitkeep
+            .npmrc
+            LICENSE
+            README.md
+            eslint.config.mjs
+            next.config.js
+            package.json
+            postcss.config.js
+            tailwind.config.js
+            tsconfig.json
+    test/
+        .gitkeep
+    .gitignore
+    LICENSE
+    README.md
+\end{verbatim}
+
+\subsubsection{Modul document\_processing.py}
+Inti pencarian berbasis teks dengan LSA: tokenisasi, normalisasi, stopword removal, TF-IDF, truncated SVD, cosine similarity. Menyediakan \texttt{query\_lsa()} dan \texttt{load\_lsa\_model()}.
+
+\subsubsection{Modul build\_model.py}
+Script offline untuk membangun model LSA: memuat dataset, preprocessing, TF-IDF, SVD, menyimpan ke \texttt{model.pkl}.
+
+\subsubsection{Modul image\_processing.py}
+Pemrosesan gambar: grayscale, flatten vektor, PCA/SVD, proyeksi query, cosine similarity.
+
+\subsubsection{Modul main.py}
+Pusat integrasi backend: inisialisasi model, API endpoint, pemetaan input, format respons.
+
+\subsubsection{Frontend}
+Dibangun dengan Next.js: halaman utama, daftar buku, detail buku, pencarian. Komponen: Navbar, SearchBar, BookCard. Komunikasi dengan backend via fetch API.
+
+\subsection{Cara Kerja dan Alur Program}
+
+\subsubsection{Inisialisasi}
+Backend memuat model LSA, embedding gambar PCA, dan metadata buku sekali saat startup.
+
+\subsubsection{Input dari Pengguna}
+Frontend menyediakan tiga mode input: pencarian judul, dokumen, atau gambar.
+
+\subsubsection{Penentuan Metode Pencarian}
+Backend mengarahkan ke fungsi yang sesuai: title\_search() untuk judul, query\_lsa() untuk dokumen, atau PCA untuk gambar.
+
+\subsubsection{Proses Pencarian}
+\begin{itemize}
+    \item \textbf{Dokumen (LSA):} Preprocess → TF-IDF → proyeksi ruang laten → cosine similarity.
+    \item \textbf{Judul:} Substring matching.
+    \item \textbf{Gambar:} Proyeksi ke PCA eigen-space → cosine similarity dengan embedding gambar lain.
+\end{itemize}
+
+% ----- BAB 4: EKSPERIMEN -----
+\section{EKSPERIMEN}
+
+\subsection{Kasus Uji Pencarian Berdasarkan Judul}
+
+\subsubsection{Kasus Uji 1: Pencarian "American"}
+\begin{itemize}
+    \item \textbf{Query}: "American"
+    \item \textbf{Hasil}: Sistem berhasil menemukan buku dengan judul yang mengandung kata "American".
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{American-light.png}
+        \caption{Hasil pencarian untuk judul "American"}
+        \label{fig:judul_american}
+    \end{figure}
+\end{itemize}
+
+\subsubsection{Kasus Uji 2: Pencarian "Sherlock"}
+\begin{itemize}
+    \item \textbf{Query}: "Sherlock"
+    \item \textbf{Hasil}: Sistem berhasil menemukan buku-buku dengan judul yang mengandung "Sherlock".
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{Sherlock-light.png}
+        \caption{Hasil pencarian untuk judul "Sherlock"}
+        \label{fig:judul_sherlock}
+    \end{figure}
+\end{itemize}
+
+\subsubsection{Kasus Uji 3: Pencarian "The World as Will and Idea (Vol. 1 of 3)"}
+\begin{itemize}
+    \item \textbf{Query}: "The World as Will and Idea (Vol. 1 of 3)"
+    \item \textbf{Hasil}: Sistem berhasil menemukan buku dengan judul yang sesuai.
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{The World as Will and Idea (Vol. 1 of 3)-dark (1).png}
+        \caption{Hasil pencarian untuk judul "The World as Will and Idea (Vol. 1 of 3)"}
+        \label{fig:judul_world}
+    \end{figure}
+\end{itemize}
+
+\subsection{Kasus Uji Pencarian Berdasarkan Topik/Keyword}
+
+\subsubsection{Kasus Uji 1: Pencarian Dokumen "The Adventures of Sherlock Holmes" (ID : 108)}
+\begin{itemize}
+    \item \textbf{Query}: Dokumen teks berisi awal buku \textit{The Adventures of Sherlock Holmes}.
+    \item \textbf{Hasil}: Sistem LSA berhasil menemukan buku-buku dengan tingkat kemiripan konten yang sangat tinggi. Buku dengan \textit{Book ID 108} (\textit{The Return of Sherlock Holmes}) muncul sebagai hasil paling relevan dengan skor similarity 0.9846, diikuti oleh beberapa buku lain dalam seri Sherlock Holmes yang juga memiliki skor di atas 0.98.
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{topic1.jpg}
+        \caption{Hasil pencarian untuk dokumen "The Adventures of Sherlock Holmes"}
+        \label{fig:keyword_ml}
+    \end{figure}
+\end{itemize}
+
+\subsubsection{Kasus Uji 2: Pencarian Dokumen "THE DECLARATION OF INDEPENDENCE of the united states of america"}
+\begin{itemize}
+    \item \textbf{Query}: Dokumen teks berisi awal buku \textit{THE DECLARATION OF INDEPENDENCE of the united states of america}.
+    \item \textbf{Hasil}: Sistem LSA berhasil mengenali bahwa dokumen input memiliki kemiripan konten yang sangat kuat dengan buku-buku bertema sejarah dan politik Amerika. Buku dengan Book ID 1 (“The Declaration of Independence…”) muncul sebagai hasil paling relevan dengan skor similarity 0.9647, selaras dengan isi dokumen input. Empat buku lainnya juga memiliki skor tinggi di rentang 0.92–0.94, menunjukkan bahwa model mampu menangkap keterkaitan semantik antar-teks secara konsisten.
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{topic2.jpg}
+        \caption{Hasil pencarian untuk dokumen "THE DECLARATION OF INDEPENDENCE of the united states of america"}
+        \label{fig:keyword_ds}
+    \end{figure}
+\end{itemize}
+
+\subsection{Kasus Uji Pencarian Berdasarkan Gambar Sampul Buku dari Asisten}
+
+\subsubsection{Kasus Uji 1: Gambar Sampul "The Wonderful Wizard of Oz"}
+\begin{itemize}
+    \item \textbf{Hasil}: Sistem berhasil mengenali buku yang benar, ditunjukkan oleh Book ID 55 yang sesuai dengan expected ID dan memiliki skor kemiripan terendah (1641.4558) yang menandakan kemiripan visual tertinggi.
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{tc1-light.png}
+        \caption{Hasil pencarian untuk gambar sampul "The Wonderful Wizard of Oz"}
+        \label{fig:hasil_tc1}
+    \end{figure}
+\end{itemize}
+
+\subsubsection{Kasus Uji 2: Gambar Sampul "A Treatise of Human Nature"}
+\begin{itemize}
+    \item \textbf{Hasil}: Sistem berhasil mengidentifikasi buku yang sesuai, ditunjukkan oleh Book ID 4705 yang sesuai dengan expected ID dan memiliki skor kemiripan terendah (3051.4399) yang menandakan kemiripan visual tertinggi.
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{tc2-light.png}
+        \caption{Hasil pencarian untuk gambar sampul "A Treatise of Human Nature"}
+        \label{fig:hasil_tc2}
+    \end{figure}
+\end{itemize}
+
+\subsubsection{Kasus Uji 3: Gambar Sampul "The Adventures of Sherlock Holmes"}
+\begin{itemize}
+    \item \textbf{Hasil}: Sistem berhasil mengidentifikasi buku yang sesuai, ditunjukkan oleh Book ID 1661 yang sesuai dengan expected ID dan memiliki skor kemiripan terendah (2283.1819) yang menandakan kemiripan visual tertinggi.
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{tc3-light.png}
+        \caption{Hasil pencarian untuk gambar sampul "The Adventures of Sherlock Holmes"}
+        \label{fig:hasil_tc3}
+    \end{figure}
+\end{itemize}
+
+\subsection{Kasus Uji Pencarian Berdasarkan Gambar Sampul Buku yang Ditentukan Sendiri}
+
+\subsubsection{Kasus Uji 1: Gambar Sampul "The Merchant of VENICE"}
+\begin{itemize}
+    \item \textbf{Hasil}: Sistem berhasil mengidentifikasi buku yang benar, ditunjukkan oleh Book ID 1515 yang sesuai dengan expected ID dan memiliki skor kemiripan 0.0228, jauh lebih tinggi dibanding buku lain (tidak ditampilkan karena skornya jauh lebih rendah).
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{1515-lightedited.png}
+        \caption{Hasil pencarian untuk gambar sampul "The Merchant of VENICE"}
+        \label{fig:hasil_1515}
+    \end{figure}
+\end{itemize}
+
+\subsubsection{Kasus Uji 2: Gambar Sampul "Paradise Lost"}
+\begin{itemize}
+    \item \textbf{Hasil}: Sistem berhasil mengidentifikasi Paradise Lost dengan Book ID 20, sesuai dengan expected ID. Skor kemiripannya (0.0183) merupakan nilai terendah di antara hasil lain, nilai yang lebih kecil menunjukkan kemiripan yang lebih tinggi.
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{id20-light.png}
+        \caption{Hasil pencarian untuk gambar sampul "Paradise Lost"}
+        \label{fig:hasil_id20}
+    \end{figure}
+\end{itemize}
+
+\subsection{Tangkapan Layar Rekomendasi Buku}
+
+\subsubsection{Tangkapan Layar 1: Rekomendasi Setelah Membaca "The Return of Sherlock Holmes (ID:108)"}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{rekomendasi1.jpg}
+    \caption{Rekomendasi buku setelah membaca "The Return of Sherlock Holmes (ID:108)"}
+    \label{fig:rekomendasi_hobbit}
+\end{figure}
+\textbf{Hasil Analisis:}
+Sistem berhasil memberikan rekomendasi 5 buku lain yang relevan berdasarkan konten, genre, atau penulis. Buku yang direkomendasikan sebagian besar merupakan karya sastra klasik Inggris dari periode Victoria, termasuk karya Charles Dickens dan penulis yang sama (Arthur Conan Doyle).
+
+\subsubsection{Tangkapan Layar 2: Rekomendasi Setelah Membaca "THE DECLARATION OF INDEPENDENCE of the united states of america (ID : 1)"}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{rekomendasi2.jpg}
+    \caption{Rekomendasi buku setelah membaca "THE DECLARATION OF INDEPENDENCE of the united states of america (ID : 1)"}
+    \label{fig:rekomendasi_clean_code}
+\end{figure}
+\textbf{Hasil Analisis:}
+Sistem berhasil memberikan rekomendasi buku-buku terkait. Rekomendasi yang diberikan mencakup dokumen-dokumen penting lainnya dalam sejarah Amerika Serikat seperti \textit{The Constitution of the United States} dan \textit{The Federalist Papers}, serta karya-karya pendiri bangsa seperti tulisan Benjamin Franklin.
+
+\subsection{Analisis Keseluruhan}
+Berdasarkan hasil eksperimen, sistem mampu menangani berbagai jenis pencarian dengan baik. Pencarian judul berhasil menemukan buku berdasarkan substring matching. Pencarian dokumen dengan LSA berhasil menemukan buku. Pencarian gambar dengan PCA berhasil mengidentifikasi buku berdasarkan kemiripan visual. Sistem rekomendasi juga berhasil memberikan buku-buku yang relevan.
+
+% ----- BAB 5: PENUTUP -----
+\section{PENUTUP}
+
+\subsection{Kesimpulan}
+Tugas Besar 2 Aljabar Linier dan Geometri yang penulis rancang telah berhasil mengembangkan sistem temu balik informasi berbasis SVD dan vektor eigen untuk perpustakaan digital. Aplikasi web yang dibangun mampu melakukan pencarian buku berdasarkan judul (substring matching), topik/keyword dari dokumen (LSA), dan gambar sampul (PCA). Sistem rekomendasi berbasis LSA juga berhasil diimplementasikan untuk merekomendasikan buku serupa berdasarkan konten. Penggunaan SVD terbukti lebih stabil dan cocok untuk matriks tidak persegi dibandingkan eigendecomposition, sedangkan PCA berbasis SVD efektif untuk ekstraksi fitur gambar.
+
+\subsection{Saran kepada Asisten}
+\begin{itemize}
+    \item Memberikan contoh dataset yang lebih variatif untuk menguji robustnes sistem.
+    \item Menyediakan dokumentasi yang lebih rinci mengenai format input dan output yang diharapkan.
+    \item Memperjelas batasan-batasan teknis yang diizinkan dalam implementasi.
+\end{itemize}
+
+\subsection{Refleksi Pribadi}
+
+\subsubsection{Niko Samuel Simanjuntak (13524029)}
+Terima kasih asisten atas tugas dan extend deadlinenya.
+
+\subsubsection{Irvin Tandiarrang Sumual (13524030)}
+Terima kasih extend deadlinenya dan tugasnya.
+
+\subsubsection{Kalyca Nathania B. Manullang (13524071)}
+Terima kasih kepada Tuhan Yesus, semangat terus bagi yang membaca laporan ini, semangat Nayaka.
+
+% ----- BAB 5: PENUTUP -----
+% (Akan diisi nanti)
+
+% ----- DAFTAR PUSTAKA -----
+\section{DAFTAR PUSTAKA}
+\begin{thebibliography}{9}
+\bibitem{munir3}
+Deerwester, S., Dumais, S. T., Furnas, G. W., Landauer, T. K. dan Harshman, R., “Indexing by latent semantic analysis,” J. Amer. Soc. Inf. Sci., vol. 41, no. 6, pp. 391–407, Sept. 1990.
+ [Daring]. Tersedia: \url{https://web.archive.org/web/20241122082607/http://wordvec.colorado.edu/papers/Deerwester_1990.pdf}
+\bibitem{shlens} 
+J. Shlens, ”A Tutorial on Principal Component Analysis,” Google Research, Mountain View, CA,Tech. Rep. arXiv:1404.1100v1 [cs.LG], Apr. 2014. [Daring]. Tersedia: \url{https://arxiv.org/abs/1404.1100}
+\bibitem{munir1} 
+Munir, R., "Nilai Eigen dan Vektor Eigen (Bagian 1)," Institut Teknologi Bandung, Okt. 2025. [Daring]. Tersedia: \url{https://informatika.stei.itb.ac.id/~rinaldi.munir/AljabarGeometri/2025-2026/Algeo-19-Nilai-Eigen-dan-Vektor-Eigen-Bagian1-2025.pdf}
+\bibitem{munir3} 
+Munir, R., "Singular Value Decomposition (SVD) (Bagian 1)," Institut Teknologi Bandung, Nov. 2025. [Daring]. Tersedia: \url{https://informatika.stei.itb.ac.id/~rinaldi.munir/AljabarGeometri/2025-2026/Algeo-21-Singular-value-decomposition-Bagian1-2025.pdf}
+\end{thebibliography}
+
+% ----- LAMPIRAN -----
+\section{LAMPIRAN}
+\begin{enumerate}
+    \item Tautan menuju repositori GitHub kelompok: \url{https://github.com/IRK-23/algeo2-lemonnipis}
+    \item Tautan menuju video pengenalan program: \url{https://drive.google.com/drive/folders/1WEPfYjPHzVM2SNuR5K9DJJ9CSh3j4MAI?usp=sharing}
+    \item Tautan menuju hasil eksperimen: \url{https://drive.google.com/file/d/1wCl3psydM87A6uys0iMCj36n_Ge_oyLI/view?usp=sharing}
+\end{enumerate}
+
+\end{document}
