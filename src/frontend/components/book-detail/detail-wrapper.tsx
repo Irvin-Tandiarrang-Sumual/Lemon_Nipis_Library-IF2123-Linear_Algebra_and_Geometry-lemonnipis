@@ -36,11 +36,11 @@ export const BookDetailWrapper = ({ book }: DetailWrapperProps) => {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen w-screen relative left-[50%] right-[50%] -ml-[50vw] -mr-[50vw] bg-background">
-            <aside className="hidden md:block w-72 border-r border-default-200 bg-default-50/50 fixed left-0 top-0 h-screen flex-shrink-0 z-40">
-        <div className="h-full overflow-y-auto p-6 pt-20">
+      <aside className="hidden md:block w-72 border-r border-default-200 bg-white/80 dark:bg-zinc-900/90 backdrop-blur-md fixed left-0 top-16 h-[calc(100vh-4rem)] flex-shrink-0 z-30">
+        <div className="h-full overflow-y-auto p-6">
           <div className="mb-8 px-2">
-             <h2 className="text-xl font-bold text-foreground">Detail Buku</h2>
-             <p className="text-tiny text-default-500">ID: {book.id}</p>
+            <h2 className="text-xl font-bold text-foreground">Detail Buku</h2>
+            <p className="text-tiny text-default-500">ID: {book.id}</p>
           </div>
 
           <ul className="flex flex-col gap-2">
