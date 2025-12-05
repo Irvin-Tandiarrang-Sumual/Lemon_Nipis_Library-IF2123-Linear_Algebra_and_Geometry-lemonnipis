@@ -266,7 +266,8 @@ async def search_books_by_image(request : Request, file : UploadFile = File(...)
             # Asumsi result["file_name"] adalah "38427.jpg"
             book_id = result.get("file_name").split('.')[0]
             
-            if book_id in book_mapper:
+            if book_id in book_mapper and result.get("score") <= 6000:
+                print(f"SCOREE: {result.get("score")}")
                 book = book_mapper[book_id]
                 full_cover_url = get_full_cover_url(request, book.get("cover", ""))
                 
