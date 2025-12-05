@@ -365,50 +365,77 @@ def load_lsa_model(model_path: str) -> Dict:
         model = pickle.load(f)
     return model
 
-def build_lsa_model(dataset_dir: str, model_save_path: str, stop_words: set = set(stopwords.words('english')), k: int = 50, use_stemming=False, overwrite: bool = False) -> Dict:
-    """
-    Build model untuk LSA dengan loading dari direktori & fitur save/load model.
-    """
+def build_lsa_model(dataset_dir: str, model_save_path: str, stop_words: set = set(stopwords.words('english')),
+    k: int = 50, use_stemming=False, overwrite: bool = False) -> Dict:
+
+    start_time_total = time.time()  # TIMER TOTAL
+
     if os.path.exists(model_save_path) and not overwrite:
         print("Model LSA sudah ada.")
         return load_lsa_model(model_save_path)
 
     print(f"Memulai Training LSA... (k={k})")
-    start_time = time.time()
 
+    # ================= LOAD FILES =================
+    t_load = time.time()
     docs_path_list = []
     if os.path.exists(dataset_dir):
         for root, dirs, files in os.walk(dataset_dir):
             for file in files:
                 if file.lower().endswith('.txt'):
                     docs_path_list.append(os.path.join(root, file))
-    
+    print(f"[TIMER] Load file selesai dalam {time.time() - t_load:.4f} detik")
+
     N = len(docs_path_list)
     if N == 0:
         raise ValueError(f"Dataset kosong! Tidak ada file .txt ditemukan di {dataset_dir}")
-    print(f"Ditemukan {N} dokumen.")
 
-    print("Memproses dokumen dan preprocessing...")
+    print(f"Jumlah dokumen: {N}")
+
+    # ================= PREPROCESSING =================
+    t_pre = time.time()
     preprocessed = []
     raw_texts = []
-    
     for p in docs_path_list:
         with open(p, 'r', encoding='utf-8', errors='ignore') as f:
             txt = f.read()
-        raw_texts.append(txt) ## ini perlu?
+        raw_texts.append(txt)
         toks = document_preprocess(p, stop_words, use_stemming=use_stemming)
         preprocessed.append(toks)
+    print(f"[TIMER] Preprocessing selesai dalam {time.time() - t_pre:.4f} detik")
 
-    print("Membangun Vocabulary & Matrix...")
+    # ================= VOCABULARY =================
+    t_vocab = time.time()
     vocab = build_vocabulary(preprocessed)
-    A = build_term_document_matrix(preprocessed, vocab)  
-    tfidf = compute_tfidf(A)  
-    
-    print("Menghitung SVD (LSA)...")
-    U_k, Sigma_k, V_k = truncated_svd(tfidf, k=k)
-    embeddings = build_document_embeddings(V_k, Sigma_k)  
-    idf = compute_idf(A)
+    print(f"[TIMER] Build vocabulary selesai dalam {time.time() - t_vocab:.4f} detik")
 
+    # ================= TERM-DOCUMENT MATRIX =================
+    t_matrix = time.time()
+    A = build_term_document_matrix(preprocessed, vocab)
+    print(f"[TIMER] Build term-document matrix selesai dalam {time.time() - t_matrix:.4f} detik")
+
+    # ================= TF-IDF =================
+    t_tfidf = time.time()
+    tfidf = compute_tfidf(A)
+    print(f"[TIMER] TF-IDF selesai dalam {time.time() - t_tfidf:.4f} detik")
+
+    # ================= SVD =================
+    t_svd = time.time()
+    U_k, Sigma_k, V_k = truncated_svd(tfidf, k=k)
+    print(f"[TIMER] SVD selesai dalam {time.time() - t_svd:.4f} detik")
+
+    # ================= EMBEDDINGS =================
+    t_embed = time.time()
+    embeddings = build_document_embeddings(V_k, Sigma_k)
+    print(f"[TIMER] Build embeddings selesai dalam {time.time() - t_embed:.4f} detik")
+
+    # ================= IDF =================
+    t_idf = time.time()
+    idf = compute_idf(A)
+    print(f"[TIMER] Compute IDF selesai dalam {time.time() - t_idf:.4f} detik")
+
+    # ================= SAVE MODEL =================
+    t_save = time.time()
     model = {
         'vocab': vocab,
         'A': A,
@@ -419,15 +446,16 @@ def build_lsa_model(dataset_dir: str, model_save_path: str, stop_words: set = se
         'embeddings': embeddings,
         'preprocessed_docs': preprocessed,
         'idf': idf,
-        'docs_paths': docs_path_list 
+        'docs_paths': docs_path_list
     }
-
     save_model(model_save_path, model)
+    print(f"[TIMER] Save model selesai dalam {time.time() - t_save:.4f} detik")
 
-    elapsed = time.time() - start_time
-    print(f"Training LSA Selesai dalam {elapsed:.2f} detik.")
+    # ================= TOTAL =================
+    print(f"[TIMER] Total waktu training LSA: {time.time() - start_time_total:.4f} detik")
 
     return model
+
 
 def embed_query(query_path: str, model: Dict, stopwords: set, use_stemming=False) -> np.ndarray:
     """
