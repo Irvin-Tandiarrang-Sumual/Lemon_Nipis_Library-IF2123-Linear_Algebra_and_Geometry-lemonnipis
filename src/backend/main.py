@@ -215,7 +215,6 @@ async def search_books_by_title(title_query : str, skip : int = 0, limit :int = 
         "results" : paginated_result
     }
 
-
 # (post) search pake image
 @app.post("/api/books/search-by-image")
 async def search_books_by_image(file : UploadFile = File(...),
@@ -253,3 +252,38 @@ async def search_books_by_image(file : UploadFile = File(...),
         "query_results" : query_results
     }
 
+# (post) search pake document
+@app.post("/api/books/search-by-document")
+async def search_books_by_document(file : UploadFile = File(...),
+                            book_mapper : dict = Depends(get_book_mapper),
+                            lsa_model = Depends(get_lsa_model)):
+    if not file:
+        raise HTTPException(status_code=400, detail="File is empty")
+    
+    if not file.filename.lower().endswith(('.txt')):
+        raise HTTPException(status_code=400, detail="File must be txt")
+    
+    if not book_mapper:
+        raise HTTPException(status_code=503, detail="Mapper not loaded")
+    
+    if not lsa_model:
+        raise HTTPException(status_code=503, detail="LSA Model not loaded")
+    
+    # siapin path untuk si file yg di-upload supaya bisa di-process
+    with NamedTemporaryFile(delete=False) as temp_file:
+        shutil.copyfileobj(file.file, temp_file)
+        temp_file_path = temp_file.name
+
+    # proses cari results
+    query_results = query_lsa(temp_file_path, lsa_model, top_k=5)
+
+    for i, result in enumerate(query_results):
+        filename = os.path.basename(result["path"])
+        result_book_id = os.path.splitext(filename)[0]
+        result_book = book_mapper[result_book_id]
+        result["id"] = result_book_id
+        result["title"] = result_book.get("title", "")
+        result["cover"] = result_book.get("cover", "")
+    return {
+        "query_results" : query_results
+    }
