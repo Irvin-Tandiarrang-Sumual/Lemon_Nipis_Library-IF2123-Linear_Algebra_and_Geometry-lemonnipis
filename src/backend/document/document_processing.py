@@ -9,7 +9,10 @@ import nltk
 from nltk.stem import PorterStemmer
 from nltk.corpus import stopwords
 import pickle
+import multiprocessing as mp
 nltk.download('stopwords')
+porter_stemmer = PorterStemmer()
+token_regex = re.compile(r"[A-Za-z]+")
 # 2.2.1 PERSIAPAN DATA DOKUMEN
 
 def tokenize(text: str) -> List[str]: ####AMAN
@@ -20,8 +23,7 @@ def tokenize(text: str) -> List[str]: ####AMAN
     Output:
         list of tokens (list[str])
     """
-    tokens = re.findall(r"[A-Za-z]+", text)
-    return tokens
+    return token_regex.findall(text)
 
 def normalize_tokens(tokens: List[str]) -> List[str]: ## dari baca harusnya aman
     """
@@ -37,7 +39,6 @@ def stem_tokens(tokens: List[str]) -> List[str]: ## aman
     """
     Stemming: Mengubah kata-kata ke bentuk dasarnya (akar kata)
     """
-    porter_stemmer = PorterStemmer()
     return [porter_stemmer.stem(word) for word in tokens]
 
 def remove_stopwords(tokens: List[str], stopwords: set) -> List[str]:
@@ -365,6 +366,19 @@ def load_lsa_model(model_path: str) -> Dict:
         model = pickle.load(f)
     return model
 
+def preprocess_file(args):
+    path, stop_words, use_stemming = args
+    with open(path, 'r', encoding='utf-8', errors='ignore') as f:
+        text = f.read()
+
+    toks = tokenize(text)
+    toks = normalize_tokens(toks)
+    if use_stemming:
+        toks = stem_tokens(toks)
+    toks = remove_stopwords(toks, stop_words)
+    return toks
+
+
 def build_lsa_model(dataset_dir: str, model_save_path: str, stop_words: set = set(stopwords.words('english')),
     k: int = 50, use_stemming=False, overwrite: bool = False) -> Dict:
 
@@ -394,14 +408,20 @@ def build_lsa_model(dataset_dir: str, model_save_path: str, stop_words: set = se
 
     # ================= PREPROCESSING =================
     t_pre = time.time()
-    preprocessed = []
-    raw_texts = []
-    for p in docs_path_list:
-        with open(p, 'r', encoding='utf-8', errors='ignore') as f:
-            txt = f.read()
-        raw_texts.append(txt)
-        toks = document_preprocess(p, stop_words, use_stemming=use_stemming)
-        preprocessed.append(toks)
+    # preprocessed = []
+    # # raw_texts = []
+    # for p in docs_path_list:
+    #     # with open(p, 'r', encoding='utf-8', errors='ignore') as f:
+    #     #     txt = f.read()
+    #     # raw_texts.append(txt)
+    #     toks = document_preprocess(p, stop_words, use_stemming=use_stemming)
+    #     preprocessed.append(toks)
+    # Bungkus argumen agar bisa dipass ke multiprocessing
+    task_args = [(p, stop_words, use_stemming) for p in docs_path_list]
+
+    # Gunakan semua core CPU
+    with mp.Pool(mp.cpu_count()) as pool:
+        preprocessed = pool.map(preprocess_file, task_args)
     print(f"[TIMER] Preprocessing selesai dalam {time.time() - t_pre:.4f} detik")
 
     # ================= VOCABULARY =================
