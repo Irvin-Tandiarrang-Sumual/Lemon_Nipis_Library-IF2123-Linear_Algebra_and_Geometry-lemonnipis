@@ -1,4 +1,4 @@
-# Large Assignment 2 IF2123 Linear Algebra and Geometry — 2025/2026  
+# Project #2 IF2123 Linear Algebra and Geometry — 2025/2026  
 ## LemonNipis Group
 
 ### *Team Members*
